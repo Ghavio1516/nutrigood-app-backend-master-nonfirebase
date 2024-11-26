@@ -3,8 +3,8 @@ const routes = require('../routes/routes'); // Pastikan file ini ada dan isinya 
 
 const init = async () => {
     const server = Hapi.server({
-        port: 8080,
-        host: '127.0.0.1',
+        port: 5000,
+        host: '0.0.0.0',
         routes: {
             cors: {
                 origin: ['*'], // Mengizinkan CORS dari semua origin
