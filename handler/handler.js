@@ -123,6 +123,21 @@ const getTodayProductsHandler = async (request, h) => {
 const registerUserHandler = async (request, h) => {
     const { email, password, name, age, diabetes } = request.payload;
 
+    // Validasi input
+    if (!email || !password || !name || typeof age === 'undefined') {
+        return h.response({
+            status: 'fail',
+            message: 'All fields (email, password, name, age) are required',
+        }).code(400);
+    }
+
+    if (diabetes && !['yes', 'no'].includes(diabetes.toLowerCase())) {
+        return h.response({
+            status: 'fail',
+            message: 'Diabetes must be either "yes" or "no"',
+        }).code(400);
+    }
+
     // Hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -131,8 +146,8 @@ const registerUserHandler = async (request, h) => {
     const userId = generateUniqueId(email);
     const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    // Convert "Yes/No" to 1/0 for diabetes
-    const diabetesValue = diabetes.toLowerCase() === 'yes' ? 1 : 0;
+    // Tetapkan nilai diabetes sebagai string
+    const diabetesValue = diabetes ? diabetes.toLowerCase() === 'yes' ? 'Yes' : 'No' : 'No';
 
     console.log('Register User Params:', {
         userId,
@@ -156,10 +171,11 @@ const registerUserHandler = async (request, h) => {
             data: { userId },
         }).code(201);
     } catch (error) {
-        console.error(error);
+        console.error('Error registering user:', error.message);
         return h.response({ status: 'fail', message: `Failed to register user: ${error.message}` }).code(500);
     }
 };
+
 
 // Handler untuk login user
 const loginUserHandler = async (request, h) => {
