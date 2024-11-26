@@ -179,6 +179,32 @@ const registerUserHandler = async (request, h) => {
     }
 };
 
+const getUserDetailsHandler = async (request, h) => {
+    const token = request.headers.authorization?.split(' ')[1]; // Ambil token dari header
+    if (!token) {
+        return h.response({ status: 'fail', message: 'Token is missing' }).code(401);
+    }
+
+    try {
+        // Verifikasi token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+
+        // Ambil data user dari database
+        const [rows] = await data.query('SELECT name AS username, email FROM users WHERE id = ?', [userId]);
+        if (rows.length === 0) {
+            return h.response({ status: 'fail', message: 'User not found' }).code(404);
+        }
+
+        return h.response({
+            status: 'success',
+            data: rows[0],
+        }).code(200);
+    } catch (error) {
+        console.error('Error fetching user details:', error.message);
+        return h.response({ status: 'fail', message: 'Invalid or expired token' }).code(401);
+    }
+};
 
 // Handler untuk login user
 const loginUserHandler = async (request, h) => {
@@ -216,6 +242,8 @@ const loginUserHandler = async (request, h) => {
             process.env.JWT_SECRET,
             { expiresIn: '1h' } // Token berlaku selama 1 jam
         );
+        console.log("Generated token:", token);
+        res.json({ token });
 
         return h.response({
             status: 'success',
@@ -237,4 +265,5 @@ module.exports = {
     getProductByIdHandler,
     deleteProductByIdHandler,
     getTodayProductsHandler,
+    getUserDetailsHandler 
 };
