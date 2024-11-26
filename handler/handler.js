@@ -8,6 +8,7 @@ function generateUniqueId(email) {
     return crypto.createHash('sha256').update(email).digest('hex');
 }
 
+// Handler untuk menambahkan produk
 const addProductHandler = async (request, h) => {
     const { userId } = request.auth; // Mendapatkan userId dari token JWT
     const { namaProduct, valueProduct } = request.payload;
@@ -32,7 +33,6 @@ const addProductHandler = async (request, h) => {
         return h.response({ status: 'fail', message: 'Failed to add product' }).code(500);
     }
 };
-
 
 // Handler untuk mendapatkan semua produk
 const getProductsHandler = async (request, h) => {
@@ -119,6 +119,97 @@ const getTodayProductsHandler = async (request, h) => {
     }
 };
 
+// Handler untuk registrasi user
+const registerUserHandler = async (request, h) => {
+    const { email, password, name, age, diabetes } = request.payload;
+
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Generate unique identifier from email
+    const userId = generateUniqueId(email);
+    const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Convert "Yes/No" to 1/0 for diabetes
+    const diabetesValue = diabetes.toLowerCase() === 'yes' ? 1 : 0;
+
+    console.log('Register User Params:', {
+        userId,
+        email,
+        hashedPassword,
+        name,
+        age,
+        diabetesValue,
+        createdAt,
+    });
+
+    try {
+        await data.query(
+            'INSERT INTO users (id, email, password, name, age, diabetes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [userId, email, hashedPassword, name, age, diabetesValue, createdAt]
+        );
+
+        return h.response({
+            status: 'success',
+            message: 'User registered successfully',
+            data: { userId },
+        }).code(201);
+    } catch (error) {
+        console.error(error);
+        return h.response({ status: 'fail', message: `Failed to register user: ${error.message}` }).code(500);
+    }
+};
+
+// Handler untuk login user
+const loginUserHandler = async (request, h) => {
+    const { email, password } = request.payload;
+
+    console.log('Login Params:', { email, password });
+
+    try {
+        const [rows] = await data.query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (rows.length === 0) {
+            return h.response({
+                status: 'fail',
+                message: 'User not found',
+            }).code(404);
+        }
+
+        const user = rows[0];
+
+        // Compare hashed password
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            return h.response({
+                status: 'fail',
+                message: 'Invalid password',
+            }).code(401);
+        }
+
+        // Generate token
+        const token = jwt.sign(
+            { userId: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' } // Token berlaku selama 1 jam
+        );
+
+        return h.response({
+            status: 'success',
+            message: 'Login successful',
+            data: { token },
+        }).code(200);
+    } catch (error) {
+        console.error(error);
+        return h.response({ status: 'fail', message: `Failed to login: ${error.message}` }).code(500);
+    }
+};
+
+// Ekspor semua handler
 module.exports = {
     addProductHandler,
     registerUserHandler,
