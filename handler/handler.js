@@ -38,20 +38,22 @@ const addProductHandler = async (request, h) => {
 const getProductsHandler = async (request, h) => {
     const { userId } = request.auth;
     console.log('Fetching products for userId:', userId); // Log userId untuk debugging
-
     try {
         const [rows] = await data.query(
             'SELECT * FROM products WHERE userId = ? ORDER BY createdAt DESC',
             [userId]
         );
-        console.log('Fetched products:', rows); // Log hasil query
+
+        console.log('Fetched products:', rows);
 
         return h.response({
             status: 'success',
-            data: rows,
+            data: {
+                products: rows, // Bungkus data dalam objek `products`
+            },
         }).code(200);
     } catch (error) {
-        console.error('Error fetching products:', error.message);
+        console.error(error);
         return h.response({ status: 'fail', message: 'Failed to fetch products' }).code(500);
     }
 };
