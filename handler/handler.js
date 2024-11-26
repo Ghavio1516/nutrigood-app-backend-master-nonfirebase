@@ -37,21 +37,25 @@ const addProductHandler = async (request, h) => {
 // Handler untuk mendapatkan semua produk
 const getProductsHandler = async (request, h) => {
     const { userId } = request.auth;
+    console.log('Fetching products for userId:', userId); // Log userId untuk debugging
 
     try {
         const [rows] = await data.query(
             'SELECT * FROM products WHERE userId = ? ORDER BY createdAt DESC',
             [userId]
         );
+        console.log('Fetched products:', rows); // Log hasil query
+
         return h.response({
             status: 'success',
             data: rows,
         }).code(200);
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching products:', error.message);
         return h.response({ status: 'fail', message: 'Failed to fetch products' }).code(500);
     }
 };
+
 
 // Handler untuk mendapatkan produk berdasarkan ID
 const getProductByIdHandler = async (request, h) => {
