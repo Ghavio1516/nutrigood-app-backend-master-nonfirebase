@@ -22,7 +22,7 @@ const routes = [
     {
         method: 'GET',
         path: '/products',
-        handler: getProductsHandler, // Tambahkan handler ini ke handler.js
+        handler: getProductsHandler,
         options: { pre: [{ method: verifyToken }] },
     },
     {

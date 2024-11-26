@@ -1,5 +1,5 @@
 const Hapi = require('@hapi/hapi');
-const routes = require('../routes/routes'); // Pastikan file ini ada dan isinya benar
+const routes = require('../routes/routes');
 
 const init = async () => {
     const server = Hapi.server({
@@ -7,12 +7,11 @@ const init = async () => {
         host: '0.0.0.0',
         routes: {
             cors: {
-                origin: ['*'], // Mengizinkan CORS dari semua origin
+                origin: ['*'], 
             },
         },
     });
 
-    // Menambahkan rute dari file routes
     try {
         server.route(routes);
     } catch (error) {
@@ -20,7 +19,6 @@ const init = async () => {
         process.exit(1);
     }
 
-    // Menjalankan server
     try {
         await server.start();
         console.log(`Server berjalan pada ${server.info.uri}`);
@@ -30,7 +28,6 @@ const init = async () => {
     }
 };
 
-// Tangkap unhandled rejection
 process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err);
     process.exit(1);

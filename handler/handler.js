@@ -173,13 +173,12 @@ const registerUserHandler = async (request, h) => {
             data: { userId },
         }).code(201);
     } catch (error) {
-        // Tangkap error duplicate entry
         if (error.code === 'ER_DUP_ENTRY') {
             console.error('Error: Duplicate entry');
             return h.response({
                 status: 'fail',
                 message: 'User already exists',
-            }).code(409); // 409: Conflict
+            }).code(409);
         }
 
         console.error('Error registering user:', error.message);
@@ -188,7 +187,6 @@ const registerUserHandler = async (request, h) => {
 };
 
 const getUserDetailsHandler = async (request, h) => {
-    console.log("Handler getUserDetailsHandler terpanggil");
     const token = request.headers.authorization?.split(' ')[1];
     if (!token) {
         return h.response({ status: 'fail', message: 'Token is missing' }).code(401);
@@ -211,7 +209,6 @@ const getUserDetailsHandler = async (request, h) => {
             username: rows[0].username,
             email: rows[0].email,
         };
-        console.log("Response JSON:", response); // Tambahkan log untuk JSON
 
         return h.response(response).code(200);
     } catch (error) {
@@ -226,8 +223,6 @@ const getUserDetailsHandler = async (request, h) => {
 // Handler untuk login user
 const loginUserHandler = async (request, h) => {
     const { email, password } = request.payload;
-
-    console.log('Login Params:', { email, password });
 
     try {
         const [rows] = await data.query(
