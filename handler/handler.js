@@ -125,18 +125,21 @@ const registerUserHandler = async (request, h) => {
 
     // Validasi input
     if (!email || !password || !name || typeof age === 'undefined') {
+        console.error('Missing fields:', { email, password, name, age });
         return h.response({
             status: 'fail',
             message: 'All fields (email, password, name, age) are required',
         }).code(400);
     }
-
+    
     if (diabetes && !['yes', 'no'].includes(diabetes.toLowerCase())) {
+        console.error('Invalid diabetes value:', diabetes);
         return h.response({
             status: 'fail',
             message: 'Diabetes must be either "yes" or "no"',
         }).code(400);
     }
+    
 
     // Hash password
     const saltRounds = 10;
