@@ -8,6 +8,7 @@ const {
   getProductByIdHandler,
   deleteProductByIdHandler,
   getTodayProductsHandler,
+  getUserDetailsHandler
 } = require('../handler/handler');
 
 
@@ -52,6 +53,12 @@ const routes = [
         path: '/users/login',
         handler: loginUserHandler,
     },
+    {
+      method: 'GET',
+      path: '/users/details',
+      handler: getUserDetailsHandler, 
+      options: { pre: [{ method: verifyToken }] },
+  },
 ];
 
 module.exports = routes;
