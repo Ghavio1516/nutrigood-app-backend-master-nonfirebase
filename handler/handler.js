@@ -243,7 +243,6 @@ const loginUserHandler = async (request, h) => {
             { expiresIn: '1h' } // Token berlaku selama 1 jam
         );
         console.log("Generated token:", token);
-        res.json({ token });
 
         return h.response({
             status: 'success',
