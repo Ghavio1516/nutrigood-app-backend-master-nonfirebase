@@ -131,7 +131,7 @@ const registerUserHandler = async (request, h) => {
             message: 'All fields (email, password, name, age) are required',
         }).code(400);
     }
-    
+
     if (diabetes && !['yes', 'no'].includes(diabetes.toLowerCase())) {
         console.error('Invalid diabetes value:', diabetes);
         return h.response({
@@ -139,7 +139,6 @@ const registerUserHandler = async (request, h) => {
             message: 'Diabetes must be either "yes" or "no"',
         }).code(400);
     }
-    
 
     // Hash password
     const saltRounds = 10;
@@ -174,6 +173,15 @@ const registerUserHandler = async (request, h) => {
             data: { userId },
         }).code(201);
     } catch (error) {
+        // Tangkap error duplicate entry
+        if (error.code === 'ER_DUP_ENTRY') {
+            console.error('Error: Duplicate entry');
+            return h.response({
+                status: 'fail',
+                message: 'User already exists',
+            }).code(409); // 409: Conflict
+        }
+
         console.error('Error registering user:', error.message);
         return h.response({ status: 'fail', message: `Failed to register user: ${error.message}` }).code(500);
     }
