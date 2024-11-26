@@ -181,19 +181,17 @@ const registerUserHandler = async (request, h) => {
 
 const getUserDetailsHandler = async (request, h) => {
     console.log("Handler getUserDetailsHandler terpanggil");
-    const token = request.headers.authorization?.split(' ')[1]; // Ambil token dari header
+    const token = request.headers.authorization?.split(' ')[1];
     if (!token) {
         return h.response({ status: 'fail', message: 'Token is missing' }).code(401);
     }
 
     try {
-        // Verifikasi token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.userId;
 
         console.log("Decoded UserID:", userId);
 
-        // Ambil data user dari database
         const [rows] = await data.query('SELECT name AS username, email FROM users WHERE id = ?', [userId]);
         console.log("Database Query Result:", rows);
 
@@ -201,15 +199,19 @@ const getUserDetailsHandler = async (request, h) => {
             return h.response({ status: 'fail', message: 'User not found' }).code(404);
         }
 
-        return h.response({
-            status: 'success',
-            data: rows[0],
-        }).code(200);
+        const response = {
+            username: rows[0].username,
+            email: rows[0].email,
+        };
+        console.log("Response JSON:", response); // Tambahkan log untuk JSON
+
+        return h.response(response).code(200);
     } catch (error) {
         console.error('Error fetching user details:', error.message);
         return h.response({ status: 'fail', message: 'Invalid or expired token' }).code(401);
     }
 };
+
 
 
 
