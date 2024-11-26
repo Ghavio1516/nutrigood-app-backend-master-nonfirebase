@@ -1,14 +1,15 @@
 const verifyToken = require('../middleware/auth');
 
 const {
-    addProductHandler,
-    registerUserHandler,
-    loginUserHandler,
-    getProductsHandler,
-    getProductByIdHandler,
-    deleteProductByIdHandler,
-    getTodayProductsHandler,
+  addProductHandler,
+  registerUserHandler,
+  loginUserHandler,
+  getProductsHandler,
+  getProductByIdHandler,
+  deleteProductByIdHandler,
+  getTodayProductsHandler,
 } = require('../handler/handler');
+
 
 const routes = [
     {

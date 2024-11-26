@@ -8,6 +8,32 @@ function generateUniqueId(email) {
     return crypto.createHash('sha256').update(email).digest('hex');
 }
 
+const addProductHandler = async (request, h) => {
+    const { userId } = request.auth; // Mendapatkan userId dari token JWT
+    const { namaProduct, valueProduct } = request.payload;
+
+    const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    console.log('Add Product Params:', { userId, namaProduct, valueProduct, createdAt });
+
+    try {
+        const [result] = await data.query(
+            'INSERT INTO products (userId, namaProduct, valueProduct, createdAt) VALUES (?, ?, ?, ?)',
+            [userId, namaProduct, valueProduct, createdAt]
+        );
+
+        return h.response({
+            status: 'success',
+            message: 'Product added successfully',
+            data: { id: result.insertId },
+        }).code(201);
+    } catch (error) {
+        console.error('Error adding product:', error.message);
+        return h.response({ status: 'fail', message: 'Failed to add product' }).code(500);
+    }
+};
+
+
 // Handler untuk mendapatkan semua produk
 const getProductsHandler = async (request, h) => {
     const { userId } = request.auth;
