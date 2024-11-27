@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp">
+
+    <!-- Tombol untuk navigasi ke FormFragment dan mengambil foto -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <!-- Tombol Navigasi ke Form -->
+        <Button
+            android:id="@+id/btn_navigate_to_form"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Go to Form"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Tombol untuk mengambil foto -->
+        <Button
+            android:id="@+id/btn_picture_debug"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Take Photo"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <!-- Tombol untuk toggle kamera -->
+    <Button
+        android:id="@+id/btn_toggle_camera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Turn On Camera"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Pratinjau kamera -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/preview_view"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Gambar hasil foto -->
+    <ImageView
+        android:id="@+id/photo_view"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:scaleType="centerCrop"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Teks untuk menampilkan hash foto -->
+    <TextView
+        android:id="@+id/hash_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Hash will appear here"
+        android:textAlignment="center"
+        android:textColor="@android:color/black"
+        android:padding="8dp" />
+
+</LinearLayout>
