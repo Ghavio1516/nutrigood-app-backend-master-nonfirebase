@@ -276,56 +276,68 @@ const loginUserHandler = async (request, h) => {
 const fs = require('fs');
 const path = require('path');
 
-const uploadPhotoHandler = async (request, h) => {
-    const { userId } = request.auth; // Mendapatkan userId dari token JWT
-    const { base64Image, fileName } = request.payload;
+// Fungsi untuk mendapatkan nama file dalam format (username)_(jamfoto)-(tanggalfoto).jpg
+function generateFileName(username) {
+    const now = new Date();
+    const time = now.toTimeString().split(' ')[0].replace(/:/g, ''); // Format: HHMMSS
+    const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2); // Format: DDMMYY
+    return `${username}_${time}-${date}.jpg`;
+}
+
+// Handler untuk upload foto
+const uploadPhotoHandler = async (req, res) => {
+    const { base64Image, fileName } = req.body;
 
     if (!base64Image || !fileName) {
-        return h.response({
+        return res.status(400).json({
             status: 'fail',
             message: 'Missing base64Image or fileName',
-        }).code(400);
+        });
     }
 
-    // Validasi format Base64 untuk JPEG
+    // Validasi format base64Image
     if (!base64Image.startsWith('data:image/jpeg;base64,')) {
-        return h.response({
+        return res.status(400).json({
             status: 'fail',
             message: 'Invalid image format. Only JPEG is supported.',
-        }).code(400);
+        });
     }
 
     try {
         // Dekode Base64 ke buffer
-        const base64Data = base64Image.split(',')[1]; // Hapus prefix `data:image/jpeg;base64,`
-        const buffer = Buffer.from(base64Data, 'base64');
+        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
 
-        // Tentukan path penyimpanan
+        // Ambil username dari token JWT (diambil dari request.user jika menggunakan middleware auth)
+        const username = req.user.username; // Pastikan middleware auth mengisi `req.user`
+
+        // Tentukan nama file dan folder penyimpanan
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
             fs.mkdirSync(savedFolder, { recursive: true }); // Buat folder jika belum ada
         }
 
-        // Format nama file: "namauser_tanggalfoto.jpg"
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-        const safeFileName = `${fileName}_${timestamp}.jpg`;
-        const filePath = path.join(savedFolder, safeFileName);
+        // Buat nama file menggunakan fungsi generateFileName
+        const finalFileName = generateFileName(username);
+        const filePath = path.join(savedFolder, finalFileName);
 
         // Simpan file ke folder
         fs.writeFileSync(filePath, buffer);
 
         console.log(`Photo saved at ${filePath}`);
 
-        return h.response({
+        return res.status(201).json({
             status: 'success',
             message: 'Photo uploaded successfully',
-            data: { filePath },
-        }).code(201);
+            data: { filePath: filePath },
+        });
     } catch (error) {
         console.error('Error uploading photo:', error.message);
-        return h.response({ status: 'fail', message: 'Failed to upload photo' }).code(500);
+        return res.status(500).json({ status: 'fail', message: 'Failed to upload photo' });
     }
 };
+
+module.exports = { uploadPhotoHandler };
+
 
 
 // Ekspor semua handler
