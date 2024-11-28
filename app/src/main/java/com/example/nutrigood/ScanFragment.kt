@@ -1,21 +1,32 @@
 package com.example.nutrigood
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
+import android.util.Size
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.TextView
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.data.response.UploadResponse
+import com.data.retrofit.ApiConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
 import java.io.FileInputStream
 import java.util.concurrent.ExecutorService
@@ -25,10 +36,12 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var imageView: ImageView
-    private lateinit var hashTextView: TextView
+    private lateinit var uploadButton: Button // Tombol upload foto
+    private lateinit var progressBar: ProgressBar // Loading bar untuk proses upload
     private var imageCapture: ImageCapture? = null
-    private var isCameraActive = false // Flag untuk status kamera
+    private var isCameraActive = false
     private var cameraProvider: ProcessCameraProvider? = null
+    private var capturedPhotoFile: File? = null // Referensi file foto
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -42,7 +55,9 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         }
 
         imageView = view.findViewById(R.id.photo_view)
-        hashTextView = view.findViewById(R.id.hash_view)
+        uploadButton = view.findViewById(R.id.btn_upload_photo) // Inisialisasi tombol upload
+        progressBar = view.findViewById(R.id.progress_bar) // Inisialisasi progress bar
+        progressBar.visibility = View.GONE // Sembunyikan progress bar saat awal
 
         val takePhotoButton: Button = view.findViewById(R.id.btn_picture_debug)
         takePhotoButton.text = "Take Photo"
@@ -56,6 +71,12 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                     CAMERA_REQUEST_CODE
                 )
             }
+        }
+
+        uploadButton.setOnClickListener {
+            capturedPhotoFile?.let {
+                generateAndUploadBase64(it)
+            } ?: Toast.makeText(requireContext(), "No photo to upload", Toast.LENGTH_SHORT).show()
         }
 
         val toggleCameraButton: Button = view.findViewById(R.id.btn_toggle_camera)
@@ -93,7 +114,6 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
             imageCapture = ImageCapture.Builder().build()
 
             try {
-                // Gunakan kamera belakang
                 cameraProvider?.unbindAll()
                 cameraProvider?.bindToLifecycle(
                     viewLifecycleOwner,
@@ -101,7 +121,8 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                     preview,
                     imageCapture
                 )
-                isCameraActive = true // Kamera aktif
+                isCameraActive = true
+                Log.d(TAG, "Camera started")
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
@@ -109,8 +130,9 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     }
 
     private fun stopCamera() {
-        cameraProvider?.unbindAll() // Hentikan semua use case kamera
-        isCameraActive = false // Kamera tidak aktif
+        cameraProvider?.unbindAll()
+        isCameraActive = false
+        Log.d(TAG, "Camera stopped")
     }
 
     private fun takePicture() {
@@ -127,9 +149,10 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
             ContextCompat.getMainExecutor(requireContext()),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    capturedPhotoFile = photoFile // Simpan referensi file foto
                     Toast.makeText(requireContext(), "Photo Saved", Toast.LENGTH_SHORT).show()
                     displayPhoto(photoFile)
-                    generateBase64(photoFile)
+                    uploadButton.visibility = View.VISIBLE // Tampilkan tombol upload setelah foto diambil
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -140,23 +163,66 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     }
 
     private fun displayPhoto(photoFile: File) {
-        val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = 4 // Kurangi ukuran gambar (1/4 resolusi asli)
+        }
+        val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath, options)
         imageView.setImageBitmap(bitmap)
     }
 
-    private fun generateBase64(file: File) {
-        try {
-            val fis = FileInputStream(file)
-            val bytes = fis.readBytes() // Baca semua byte dari file
-            fis.close()
+    private fun generateAndUploadBase64(file: File) {
+        progressBar.visibility = View.VISIBLE // Tampilkan progress bar saat proses berlangsung
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val fis = FileInputStream(file)
+                val bytes = fis.readBytes()
+                fis.close()
 
-            // Konversi byte array ke string Base64
-            val base64String = Base64.encodeToString(bytes, Base64.DEFAULT)
-            hashTextView.text = "Base64: $base64String"
-            Log.d(TAG, "Base64 Hash: $base64String")
-        } catch (e: Exception) {
-            Log.e(TAG, "Base64 generation failed", e)
+                val base64String = "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+
+                withContext(Dispatchers.Main) {
+                    uploadPhoto(base64String, "photo_${System.currentTimeMillis()}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Base64 generation failed", e)
+            } finally {
+                withContext(Dispatchers.Main) {
+                    progressBar.visibility = View.GONE // Sembunyikan progress bar setelah selesai
+                }
+            }
         }
+    }
+
+    private fun uploadPhoto(base64Image: String, fileName: String) {
+        val sharedPreferences = requireActivity().getSharedPreferences("auth", Context.MODE_PRIVATE)
+        val token = sharedPreferences.getString("token", "") ?: ""
+
+        if (token.isEmpty()) {
+            Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val apiService = ApiConfig.getApiService()
+        val payload = mapOf(
+            "base64Image" to base64Image,
+            "fileName" to fileName
+        )
+
+        apiService.uploadPhoto("Bearer $token", payload).enqueue(object : Callback<UploadResponse> {
+            override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.e(TAG, "Failed to upload photo: ${response.errorBody()?.string()}")
+                    Toast.makeText(requireContext(), "Failed to upload photo", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
+                Log.e(TAG, "Network error: ${t.message}")
+                Toast.makeText(requireContext(), "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {

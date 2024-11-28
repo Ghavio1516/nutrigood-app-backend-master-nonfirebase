@@ -4,6 +4,7 @@ import com.data.response.LoginRequest
 import com.data.response.LoginResponse
 import com.data.response.Product
 import com.data.response.ProductResponse
+import com.data.response.UploadResponse
 import com.data.response.User
 import retrofit2.Call
 import retrofit2.http.Body
@@ -51,5 +52,12 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Int
     ): Call<Void>
+
+    // Endpoint untuk upload foto
+    @POST("upload-photo")
+    fun uploadPhoto(
+        @Header("Authorization") token: String,
+        @Body payload: Map<String, String>
+    ): Call<UploadResponse>
 
 }
