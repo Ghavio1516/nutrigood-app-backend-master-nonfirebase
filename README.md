@@ -7,3 +7,4 @@ fitur :
 - View Product
 - Delete Product
 - Take Photo
+- Upload Photo
