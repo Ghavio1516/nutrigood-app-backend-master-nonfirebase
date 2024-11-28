@@ -231,7 +231,10 @@ const loginUserHandler = async (request, h) => {
     const { email, password } = request.payload;
 
     try {
-        const [rows] = await data.query('SELECT * FROM users WHERE email = ?', [email]);
+        const [rows] = await data.query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
 
         if (rows.length === 0) {
             return h.response({
@@ -241,8 +244,9 @@ const loginUserHandler = async (request, h) => {
         }
 
         const user = rows[0];
-        const isValidPassword = await bcrypt.compare(password, user.password);
 
+        // Compare hashed password
+        const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) {
             return h.response({
                 status: 'fail',
@@ -250,12 +254,13 @@ const loginUserHandler = async (request, h) => {
             }).code(401);
         }
 
-        // Tambahkan username ke payload token
+        // Generate token
         const token = jwt.sign(
-            { userId: user.id, username: user.name }, // Tambahkan username ke payload
+            { userId: user.id },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '1h' } // Token berlaku selama 1 jam
         );
+        console.log("Generated token:", token);
 
         return h.response({
             status: 'success',
@@ -263,17 +268,16 @@ const loginUserHandler = async (request, h) => {
             data: { token },
         }).code(200);
     } catch (error) {
-        console.error('Error logging in user:', error.message);
-        return h.response({ status: 'fail', message: 'Failed to login' }).code(500);
+        console.error(error);
+        return h.response({ status: 'fail', message: `Failed to login: ${error.message}` }).code(500);
     }
 };
-
 
 const fs = require('fs');
 const path = require('path');
 
 const uploadPhotoHandler = async (request, h) => {
-    const { username } = request.auth; // Mendapatkan username dari token JWT
+    const { userId } = request.auth; // Mendapatkan userId dari token JWT
     const { base64Image } = request.payload;
 
     if (!base64Image) {
@@ -302,11 +306,11 @@ const uploadPhotoHandler = async (request, h) => {
             fs.mkdirSync(savedFolder, { recursive: true });
         }
 
-        // Format nama file: "(username)_(jamfoto)-(tanggalfoto).jpg"
+        // Format nama file: "(iduser)_(jamfoto)-(tanggalfoto).jpg"
         const now = new Date();
         const time = now.toTimeString().split(' ')[0].replace(/:/g, ''); // Format: HHMMSS
         const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2); // Format: DDMMYY
-        const finalFileName = `${username}_${time}-${date}.jpg`;
+        const finalFileName = `${userId}_${time}-${date}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
 
         // Simpan file ke folder
@@ -324,6 +328,7 @@ const uploadPhotoHandler = async (request, h) => {
         return h.response({ status: 'fail', message: 'Failed to upload photo' }).code(500);
     }
 };
+
 
 
 

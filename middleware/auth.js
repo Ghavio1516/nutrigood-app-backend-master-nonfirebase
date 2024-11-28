@@ -13,7 +13,7 @@ const verifyToken = async (request, h) => {
     try {
         // Verifikasi token menggunakan secret key
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-        request.auth = { userId: decodedToken.userId, username: decodedToken.username }; // Tambahkan username ke request.auth
+        request.auth = { userId: decodedToken.userId }; // Set userId ke request.auth
         return h.continue;
     } catch (error) {
         console.error('Token verification failed:', error.message);
