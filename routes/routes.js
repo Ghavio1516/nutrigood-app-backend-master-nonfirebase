@@ -8,7 +8,8 @@ const {
   getProductByIdHandler,
   deleteProductByIdHandler,
   getTodayProductsHandler,
-  getUserDetailsHandler
+  getUserDetailsHandler,
+  uploadPhotoHandler
 } = require('../handler/handler');
 
 
@@ -59,6 +60,20 @@ const routes = [
       handler: getUserDetailsHandler, 
       options: { pre: [{ method: verifyToken }] },
     },
+    {
+        method: 'POST',
+        path: '/upload-photo',
+        handler: uploadPhotoHandler, // Tambahkan handler ini di langkah berikutnya
+        options: {
+            pre: [{ method: verifyToken }], // Gunakan middleware untuk autentikasi
+            payload: {
+                maxBytes: 10 * 1024 * 1024, // Maksimal ukuran file 10 MB
+                output: 'data',
+                parse: true,
+            },
+        },
+    },
+    
 ];
 
 module.exports = routes;
