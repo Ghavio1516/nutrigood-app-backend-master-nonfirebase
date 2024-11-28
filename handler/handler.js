@@ -287,32 +287,33 @@ const uploadPhotoHandler = async (request, h) => {
         }).code(400);
     }
 
+    // Validasi format Base64
     if (!base64Image.startsWith('data:image/jpeg;base64,')) {
         return h.response({
             status: 'fail',
             message: 'Invalid image format. Only JPEG is supported.',
         }).code(400);
-    }    
+    }
 
     try {
         // Dekode Base64 ke buffer
-        const buffer = Buffer.from(base64Image, 'base64');
+        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
 
-        // Tentukan path penyimpanan
+        // Tentukan folder penyimpanan
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
             fs.mkdirSync(savedFolder, { recursive: true }); // Buat folder jika belum ada
         }
 
-        // Format nama file: "namauser_tanggalfoto.jpg"
+        // Format nama file
         const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
         const safeFileName = `${fileName}_${timestamp}.jpg`;
         const filePath = path.join(savedFolder, safeFileName);
 
-        // Simpan file ke folder
+        // Simpan file
         fs.writeFileSync(filePath, buffer);
 
-        console.log(`Photo saved at ${filePath}`);
+        console.log(`Photo saved successfully at ${filePath}`);
 
         return h.response({
             status: 'success',
@@ -324,6 +325,7 @@ const uploadPhotoHandler = async (request, h) => {
         return h.response({ status: 'fail', message: 'Failed to upload photo' }).code(500);
     }
 };
+
 
 
 // Ekspor semua handler
