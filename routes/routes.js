@@ -8,8 +8,7 @@ const {
   getProductByIdHandler,
   deleteProductByIdHandler,
   getTodayProductsHandler,
-  getUserDetailsHandler,
-  uploadPhotoHandler
+  getUserDetailsHandler
 } = require('../handler/handler');
 
 
@@ -60,20 +59,6 @@ const routes = [
       handler: getUserDetailsHandler, 
       options: { pre: [{ method: verifyToken }] },
     },
-    {
-        method: 'POST',
-        path: '/upload-photo',
-        handler: uploadPhotoHandler,
-        options: {
-            auth: 'jwt', // Jika menggunakan JWT
-            payload: {
-                maxBytes: 10 * 1024 * 1024, // Batas ukuran file 10MB
-                output: 'data',
-                parse: true,
-            },
-        },
-    },
-    
 ];
 
 module.exports = routes;

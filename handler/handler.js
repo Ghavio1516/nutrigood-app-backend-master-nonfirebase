@@ -273,61 +273,6 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
-const fs = require('fs');
-const path = require('path');
-
-const uploadPhotoHandler = async (request, h) => {
-    const { userId } = request.auth; // Mendapatkan userId dari token JWT
-    const { base64Image, fileName } = request.payload;
-
-    if (!base64Image || !fileName) {
-        return h.response({
-            status: 'fail',
-            message: 'Missing base64Image or fileName',
-        }).code(400);
-    }
-
-    // Validasi format Base64
-    if (!base64Image.startsWith('data:image/jpeg;base64,')) {
-        return h.response({
-            status: 'fail',
-            message: 'Invalid image format. Only JPEG is supported.',
-        }).code(400);
-    }
-
-    try {
-        // Dekode Base64 ke buffer
-        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
-
-        // Tentukan folder penyimpanan
-        const savedFolder = path.join(__dirname, '../saved_photos');
-        if (!fs.existsSync(savedFolder)) {
-            fs.mkdirSync(savedFolder, { recursive: true }); // Buat folder jika belum ada
-        }
-
-        // Format nama file
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-        const safeFileName = `${fileName}_${timestamp}.jpg`;
-        const filePath = path.join(savedFolder, safeFileName);
-
-        // Simpan file
-        fs.writeFileSync(filePath, buffer);
-
-        console.log(`Photo saved successfully at ${filePath}`);
-
-        return h.response({
-            status: 'success',
-            message: 'Photo uploaded successfully',
-            data: { filePath },
-        }).code(201);
-    } catch (error) {
-        console.error('Error uploading photo:', error.message);
-        return h.response({ status: 'fail', message: 'Failed to upload photo' }).code(500);
-    }
-};
-
-
-
 // Ekspor semua handler
 module.exports = {
     addProductHandler,
@@ -337,6 +282,5 @@ module.exports = {
     getProductByIdHandler,
     deleteProductByIdHandler,
     getTodayProductsHandler,
-    getUserDetailsHandler,
-    uploadPhotoHandler
+    getUserDetailsHandler 
 };
