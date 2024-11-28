@@ -211,7 +211,9 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         apiService.uploadPhoto("Bearer $token", payload).enqueue(object : Callback<UploadResponse> {
             override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
                 if (response.isSuccessful) {
-                    Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_SHORT).show()
+                    uploadButton.visibility = View.GONE
+                    Log.e(TAG, "Base64 : ${payload}")
+                    Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_LONG).show()
                 } else {
                     Log.e(TAG, "Failed to upload photo: ${response.errorBody()?.string()}")
                     Toast.makeText(requireContext(), "Failed to upload photo", Toast.LENGTH_SHORT).show()
