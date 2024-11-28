@@ -1,21 +1,23 @@
 const jwt = require('jsonwebtoken');
 
-const verifyToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+// Middleware untuk memverifikasi token JWT
+const verifyToken = async (request, h) => {
+    const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
+        return h.response({ status: 'fail', message: 'Unauthorized' }).code(401).takeover();
     }
 
     const token = authHeader.split(' ')[1];
 
     try {
+        // Verifikasi token menggunakan secret key
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = { userId: decodedToken.userId, username: decodedToken.username }; // Pastikan token berisi `username`
-        next();
+        request.auth = { userId: decodedToken.userId, username: decodedToken.username }; // Tambahkan username ke request.auth
+        return h.continue;
     } catch (error) {
         console.error('Token verification failed:', error.message);
-        return res.status(401).json({ status: 'fail', message: 'Invalid token' });
+        return h.response({ status: 'fail', message: 'Invalid token' }).code(401).takeover();
     }
 };
 
