@@ -231,10 +231,7 @@ const loginUserHandler = async (request, h) => {
     const { email, password } = request.payload;
 
     try {
-        const [rows] = await data.query(
-            'SELECT * FROM users WHERE email = ?',
-            [email]
-        );
+        const [rows] = await data.query('SELECT * FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
             return h.response({
@@ -244,9 +241,8 @@ const loginUserHandler = async (request, h) => {
         }
 
         const user = rows[0];
-
-        // Compare hashed password
         const isValidPassword = await bcrypt.compare(password, user.password);
+
         if (!isValidPassword) {
             return h.response({
                 status: 'fail',
@@ -254,13 +250,12 @@ const loginUserHandler = async (request, h) => {
             }).code(401);
         }
 
-        // Generate token
+        // Tambahkan username ke payload token
         const token = jwt.sign(
-            { userId: user.id },
+            { userId: user.id, username: user.name }, // Tambahkan username ke payload
             process.env.JWT_SECRET,
-            { expiresIn: '1h' } // Token berlaku selama 1 jam
+            { expiresIn: '1h' }
         );
-        console.log("Generated token:", token);
 
         return h.response({
             status: 'success',
@@ -268,10 +263,11 @@ const loginUserHandler = async (request, h) => {
             data: { token },
         }).code(200);
     } catch (error) {
-        console.error(error);
-        return h.response({ status: 'fail', message: `Failed to login: ${error.message}` }).code(500);
+        console.error('Error logging in user:', error.message);
+        return h.response({ status: 'fail', message: 'Failed to login' }).code(500);
     }
 };
+
 
 const fs = require('fs');
 const path = require('path');
