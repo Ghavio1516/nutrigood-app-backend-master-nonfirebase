@@ -26,10 +26,14 @@ class Login : AppCompatActivity() {
         val etEmail = findViewById<EditText>(R.id.email)
         val etPassword = findViewById<EditText>(R.id.password)
         val tvRegisterAccount = findViewById<TextView>(R.id.register_account)
+        val tvAboutUs = findViewById<TextView>(R.id.about_us)
 
-        // Navigasi ke halaman registrasi
-        tvRegisterAccount.setOnClickListener {
+        tvRegisterAccount.setOnClickListener{
             val intent = Intent(this, Register::class.java)
+            startActivity(intent)
+        }
+        tvAboutUs.setOnClickListener{
+            val intent = Intent(this, AboutUs::class.java)
             startActivity(intent)
         }
 
