@@ -34,28 +34,23 @@ if __name__ == '__main__':
         print("Loading model...")
         model = load_model()
         print("Model loaded.")
-
-        # Simulasikan panggilan pertama untuk inisialisasi
+        print(f"Model input shape: {model.input_shape}")
+        # **Panggil model dengan dummy input untuk inisialisasi**
         print("Initializing model with dummy input...")
-        dummy_input = np.zeros((1, 32, 32, 3))  # Sesuaikan ukuran dengan model Anda
-        model(dummy_input)
+        dummy_input = np.zeros((1, 32, 32, 3), dtype=np.float32)  # Sesuaikan ukuran dengan model Anda
+        _ = model.predict(dummy_input)  # Lakukan prediksi dummy untuk menetapkan input shape
         print("Model initialized.")
 
         # Preprocessing gambar
         print("Preprocessing image...")
         input_tensor = preprocess_image(image_path)
         print(f"Shape input tensor: {input_tensor.shape}")
-
-        # Debugging output shape sebelum Flatten
-        intermediate_layer_name = "flatten"  # Nama layer Flatten
-        intermediate_layer_model = tf.keras.Model(inputs=model.input, outputs=model.get_layer(intermediate_layer_name).output)
-        intermediate_output = intermediate_layer_model.predict(input_tensor)
-        print(f"Shape setelah layer {intermediate_layer_name}: {intermediate_output.shape}")
-
         # Prediksi dengan model
         print("Making predictions...")
         predictions = model.predict(input_tensor)
         print("Predictions made.")
+        
+        
 
         # Konversi hasil prediksi ke JSON (sesuaikan format sesuai output model Anda)
         predictions_json = predictions.tolist()
