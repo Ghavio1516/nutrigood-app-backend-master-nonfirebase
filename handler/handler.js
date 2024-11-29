@@ -321,7 +321,7 @@ const uploadPhotoHandler = async (request, h) => {
         console.log(`Photo saved at ${filePath}`);
 
         // Path ke script Python untuk prediksi dengan model Keras
-        const scriptPath = path.join(__dirname, '../predict_with_model.py');
+        const scriptPath = path.join(__dirname, '../ocr_processing.py');
 
         // Jalankan script Python untuk memuat model dan membuat prediksi
         const pythonProcess = spawn('python', [scriptPath, filePath]);
