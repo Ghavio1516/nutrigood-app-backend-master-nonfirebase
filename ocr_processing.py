@@ -31,35 +31,20 @@ if __name__ == '__main__':
         image_path = sys.argv[1]
 
         # Muat model Keras
-        print("Loading model...")
         model = load_model()
-        print("Model loaded.")
-
-        # Inisialisasi model dengan dummy input
-        print("Initializing model with dummy input...")
-        dummy_input = np.zeros((1, 32, 32, 3), dtype=np.float32)
-        _ = model.predict(dummy_input)
-        print("Model initialized.")
 
         # Preprocessing gambar
-        print("Preprocessing image...")
         input_tensor = preprocess_image(image_path)
-        print(f"Shape input tensor: {input_tensor.shape}")
 
         # Prediksi dengan model
-        print("Making predictions...")
         predictions = model.predict(input_tensor)
-        print("Predictions made.")
 
-        # Debug: cetak prediksi untuk memeriksa formatnya
-        print(f"Raw predictions: {predictions}")
-
-        # Konversi hasil prediksi ke JSON (pastikan ini sesuai dengan output model Anda)
+        # Konversi hasil prediksi ke JSON
         predictions_json = predictions.tolist()
-        print(f"Predictions JSON: {predictions_json}")
 
-        # Cetak hasil sebagai JSON
+        # Cetak hasil sebagai JSON (tanpa log tambahan)
         print(json.dumps(predictions_json))
+
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

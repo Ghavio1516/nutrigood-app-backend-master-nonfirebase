@@ -277,9 +277,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-// Handler upload foto dan proses prediksi
 const uploadPhotoHandler = async (request, h) => {
-    const { userId } = request.auth; // Dapatkan userId dari token JWT
+    const { userId } = request.auth;
     const { base64Image } = request.payload;
 
     if (!base64Image) {
@@ -289,41 +288,26 @@ const uploadPhotoHandler = async (request, h) => {
         }).code(400);
     }
 
-    // Validasi format Base64 untuk JPEG
-    if (!base64Image.startsWith('data:image/jpeg;base64,')) {
-        return h.response({
-            status: 'fail',
-            message: 'Invalid image format. Only JPEG is supported.',
-        }).code(400);
-    }
-
     try {
-        // Dekode Base64 ke buffer
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
-        // Tentukan folder penyimpanan
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
             fs.mkdirSync(savedFolder, { recursive: true });
         }
 
-        // Format nama file
         const now = new Date();
-        const time = now.toTimeString().split(' ')[0].replace(/:/g, ''); // HHMMSS
-        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2); // DDMMYY
+        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
+        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
         const finalFileName = `${userId}_${time}-${date}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
 
-        // Simpan file ke folder
         fs.writeFileSync(filePath, buffer);
 
         console.log(`Photo saved at ${filePath}`);
 
-        // Path ke script Python untuk prediksi dengan model Keras
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
-
-        // Jalankan script Python untuk memuat model dan membuat prediksi
         const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
         let scriptOutput = '';
@@ -339,11 +323,10 @@ const uploadPhotoHandler = async (request, h) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        console.log("Raw script output:", scriptOutput); // Debug log
-                        const parsedResult = JSON.parse(scriptOutput);
+                        const parsedResult = JSON.parse(scriptOutput.trim());
                         resolve(parsedResult);
                     } catch (error) {
-                        console.error("Failed to parse JSON:", scriptOutput); // Debug log
+                        console.error("Failed to parse JSON:", scriptOutput);
                         reject(new Error('Failed to parse model output as JSON'));
                     }
                 } else {
@@ -368,6 +351,7 @@ const uploadPhotoHandler = async (request, h) => {
         }).code(500);
     }
 };
+
 
 // Ekspor semua handler
 module.exports = {
