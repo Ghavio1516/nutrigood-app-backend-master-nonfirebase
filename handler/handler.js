@@ -275,9 +275,26 @@ const loginUserHandler = async (request, h) => {
 
 const fs = require('fs');
 const path = require('path');
+const tf = require('@tensorflow/tfjs-node'); // TensorFlow.js untuk Node.js
 
+// Fungsi untuk memuat model TensorFlow
+const loadModel = async (modelPath) => {
+    return await tf.loadLayersModel(`file://${modelPath}`);
+};
+
+// Fungsi untuk memproses gambar menjadi tensor
+const preprocessImage = (imageBuffer) => {
+    return tf.node
+        .decodeImage(imageBuffer, 3) // 3 channel untuk RGB
+        .resizeBilinear([128, 128]) // Sesuaikan ukuran input dengan model Anda
+        .toFloat()
+        .div(255.0) // Normalisasi ke [0, 1]
+        .expandDims(0); // Tambahkan batch dimension
+};
+
+// Handler upload foto dan prediksi dengan model
 const uploadPhotoHandler = async (request, h) => {
-    const { userId } = request.auth; // Mendapatkan userId dari token JWT
+    const { userId } = request.auth; // Dapatkan userId dari token JWT
     const { base64Image } = request.payload;
 
     if (!base64Image) {
@@ -297,7 +314,7 @@ const uploadPhotoHandler = async (request, h) => {
 
     try {
         // Dekode Base64 ke buffer
-        const base64Data = base64Image.split(',')[1]; // Hapus prefix `data:image/jpeg;base64,`
+        const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
         // Tentukan folder penyimpanan
@@ -306,10 +323,10 @@ const uploadPhotoHandler = async (request, h) => {
             fs.mkdirSync(savedFolder, { recursive: true });
         }
 
-        // Format nama file: "(iduser)_(jamfoto)-(tanggalfoto).jpg"
+        // Format nama file
         const now = new Date();
-        const time = now.toTimeString().split(' ')[0].replace(/:/g, ''); // Format: HHMMSS
-        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2); // Format: DDMMYY
+        const time = now.toTimeString().split(' ')[0].replace(/:/g, ''); // HHMMSS
+        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2); // DDMMYY
         const finalFileName = `${userId}_${time}-${date}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
 
@@ -318,19 +335,42 @@ const uploadPhotoHandler = async (request, h) => {
 
         console.log(`Photo saved at ${filePath}`);
 
+        // Path model
+        const modelPath = path.join(__dirname, '../model/CustomCnn_model.keras');
+
+        // Muat model
+        console.log('Loading model...');
+        const model = await loadModel(modelPath);
+
+        console.log('Model loaded. Preprocessing image...');
+        const tensor = preprocessImage(buffer);
+
+        console.log('Predicting with model...');
+        const predictions = model.predict(tensor).arraySync();
+
+        console.log('Prediction result:', predictions);
+
+        // Mengubah output prediksi menjadi string teks (sesuaikan dengan model Anda)
+        const nutritionText = predictions
+            .map((line) => line.join(' ')) // Menggabungkan teks pada setiap baris
+            .join('\n'); // Tambahkan newline antar baris
+
         return h.response({
             status: 'success',
-            message: 'Photo uploaded successfully',
-            data: { filePath },
+            message: 'Photo uploaded and processed successfully',
+            data: {
+                filePath,
+                nutritionFacts: nutritionText,
+            },
         }).code(201);
     } catch (error) {
-        console.error('Error uploading photo:', error.message);
-        return h.response({ status: 'fail', message: 'Failed to upload photo' }).code(500);
+        console.error('Error uploading and processing photo:', error.message);
+        return h.response({
+            status: 'fail',
+            message: 'Failed to upload and process photo',
+        }).code(500);
     }
 };
-
-
-
 
 // Ekspor semua handler
 module.exports = {
