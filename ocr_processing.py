@@ -17,11 +17,12 @@ def preprocess_image(image_path):
     image = cv2.imread(image_path)
     if image is None:
         raise ValueError("Image not found or invalid.")
-    
-    # Resize gambar ke ukuran yang sesuai dengan model
-    image = cv2.resize(image, (128, 128))  # Pastikan sesuai dengan IMG_SIZE
+
+    # Resize gambar ke ukuran yang diharapkan model
+    image = cv2.resize(image, (32, 32))  # Sesuaikan dengan ukuran input layer pertama
     image = image.astype('float32') / 255.0  # Normalisasi ke [0, 1]
-    image = np.expand_dims(image, axis=0)  # Tambahkan batch dimension
+    image = np.expand_dims(image, axis=0)  # Tambahkan dimensi batch
+    
     return image
 
 # Load model dan prediksi
