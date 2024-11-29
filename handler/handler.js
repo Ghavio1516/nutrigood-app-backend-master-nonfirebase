@@ -324,27 +324,26 @@ const uploadPhotoHandler = async (request, h) => {
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
 
         // Jalankan script Python untuk memuat model dan membuat prediksi
-        const pythonProcess = spawn('python3', [scriptPath, filePath]); // Gunakan python3
+        const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
-        // Tangkap output dari script Python
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
         });
 
-        // Tangkap error dari script Python
         pythonProcess.stderr.on('data', (data) => {
             console.error(`Error from Python script: ${data.toString()}`);
         });
 
-        // Tangani hasil setelah script selesai
         const result = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
+                        console.log("Raw script output:", scriptOutput); // Debug log
                         const parsedResult = JSON.parse(scriptOutput);
                         resolve(parsedResult);
                     } catch (error) {
+                        console.error("Failed to parse JSON:", scriptOutput); // Debug log
                         reject(new Error('Failed to parse model output as JSON'));
                     }
                 } else {

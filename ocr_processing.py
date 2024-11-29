@@ -34,26 +34,29 @@ if __name__ == '__main__':
         print("Loading model...")
         model = load_model()
         print("Model loaded.")
-        print(f"Model input shape: {model.input_shape}")
-        # **Panggil model dengan dummy input untuk inisialisasi**
+
+        # Inisialisasi model dengan dummy input
         print("Initializing model with dummy input...")
-        dummy_input = np.zeros((1, 32, 32, 3), dtype=np.float32)  # Sesuaikan ukuran dengan model Anda
-        _ = model.predict(dummy_input)  # Lakukan prediksi dummy untuk menetapkan input shape
+        dummy_input = np.zeros((1, 32, 32, 3), dtype=np.float32)
+        _ = model.predict(dummy_input)
         print("Model initialized.")
 
         # Preprocessing gambar
         print("Preprocessing image...")
         input_tensor = preprocess_image(image_path)
         print(f"Shape input tensor: {input_tensor.shape}")
+
         # Prediksi dengan model
         print("Making predictions...")
         predictions = model.predict(input_tensor)
         print("Predictions made.")
-        
-        
 
-        # Konversi hasil prediksi ke JSON (sesuaikan format sesuai output model Anda)
+        # Debug: cetak prediksi untuk memeriksa formatnya
+        print(f"Raw predictions: {predictions}")
+
+        # Konversi hasil prediksi ke JSON (pastikan ini sesuai dengan output model Anda)
         predictions_json = predictions.tolist()
+        print(f"Predictions JSON: {predictions_json}")
 
         # Cetak hasil sebagai JSON
         print(json.dumps(predictions_json))
