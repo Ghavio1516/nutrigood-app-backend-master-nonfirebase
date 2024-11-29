@@ -275,24 +275,9 @@ const loginUserHandler = async (request, h) => {
 
 const fs = require('fs');
 const path = require('path');
-const tf = require('@tensorflow/tfjs-node'); // TensorFlow.js untuk Node.js
+const { spawn } = require('child_process');
 
-// Fungsi untuk memuat model TensorFlow (dari .h5)
-const loadModel = async (modelPath) => {
-    return await tf.loadLayersModel(`file://${modelPath}`);
-};
-
-// Fungsi untuk memproses gambar menjadi tensor
-const preprocessImage = (imageBuffer) => {
-    return tf.node
-        .decodeImage(imageBuffer, 3) // 3 channel untuk RGB
-        .resizeBilinear([128, 128]) // Sesuaikan ukuran input dengan model Anda
-        .toFloat()
-        .div(255.0) // Normalisasi ke [0, 1]
-        .expandDims(0); // Tambahkan batch dimension
-};
-
-// Handler upload foto dan prediksi dengan model
+// Handler upload foto dan proses prediksi
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth; // Dapatkan userId dari token JWT
     const { base64Image } = request.payload;
@@ -335,32 +320,45 @@ const uploadPhotoHandler = async (request, h) => {
 
         console.log(`Photo saved at ${filePath}`);
 
-        // Path model
-        const modelPath = path.join(__dirname, '../model/CustomCnn_model.h5');
+        // Path ke script Python untuk prediksi dengan model Keras
+        const scriptPath = path.join(__dirname, '../predict_with_model.py');
 
-        // Muat model
-        console.log('Loading model...');
-        const model = await loadModel(modelPath);
+        // Jalankan script Python untuk memuat model dan membuat prediksi
+        const pythonProcess = spawn('python', [scriptPath, filePath]);
 
-        console.log('Model loaded. Preprocessing image...');
-        const tensor = preprocessImage(buffer);
+        // Tangkap output dari script Python
+        let scriptOutput = '';
+        pythonProcess.stdout.on('data', (data) => {
+            scriptOutput += data.toString();
+        });
 
-        console.log('Predicting with model...');
-        const predictions = model.predict(tensor).arraySync();
+        // Tangkap error dari script Python
+        pythonProcess.stderr.on('data', (data) => {
+            console.error(`Error from Python script: ${data.toString()}`);
+        });
 
-        console.log('Prediction result:', predictions);
-
-        // Mengubah output prediksi menjadi string teks (sesuaikan dengan model Anda)
-        const nutritionText = predictions
-            .map((line) => line.join(' ')) // Menggabungkan teks pada setiap baris
-            .join('\n'); // Tambahkan newline antar baris
+        // Tangani hasil setelah script selesai
+        const result = await new Promise((resolve, reject) => {
+            pythonProcess.on('close', (code) => {
+                if (code === 0) {
+                    try {
+                        const parsedResult = JSON.parse(scriptOutput);
+                        resolve(parsedResult);
+                    } catch (error) {
+                        reject(new Error('Failed to parse model output as JSON'));
+                    }
+                } else {
+                    reject(new Error('Python script exited with error'));
+                }
+            });
+        });
 
         return h.response({
             status: 'success',
             message: 'Photo uploaded and processed successfully',
             data: {
                 filePath,
-                nutritionFacts: nutritionText,
+                predictions: result,
             },
         }).code(201);
     } catch (error) {
