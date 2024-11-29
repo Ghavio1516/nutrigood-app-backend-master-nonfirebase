@@ -35,6 +35,12 @@ if __name__ == '__main__':
         model = load_model()
         print("Model loaded.")
 
+        # Simulasikan panggilan pertama untuk inisialisasi
+        print("Initializing model with dummy input...")
+        dummy_input = np.zeros((1, 32, 32, 3))  # Sesuaikan ukuran dengan model Anda
+        model(dummy_input)
+        print("Model initialized.")
+
         # Preprocessing gambar
         print("Preprocessing image...")
         input_tensor = preprocess_image(image_path)
