@@ -30,25 +30,24 @@ def preprocess_image(image_path):
 
 if __name__ == '__main__':
     try:
-        # Path to image
+        # Path ke gambar yang akan diproses
         image_path = sys.argv[1]
 
-        # Load model
+        # Muat model Keras
         model = load_model()
 
-        # Preprocess image
+        # Preprocessing gambar
         input_tensor = preprocess_image(image_path)
 
-        # Make prediction
+        # Prediksi dengan model
         predictions = model.predict(input_tensor)
 
-        # Convert prediction to JSON
+        # Konversi hasil prediksi ke JSON
         predictions_json = predictions.tolist()
 
-        # Output JSON
-        print(json.dumps(predictions_json))
+        # Cetak JSON dengan label Output
+        print(f"Output : {json.dumps(predictions_json)}")
 
     except Exception as e:
-        # Print error to stderr
-        print(f"Error: {e}", file=sys.stderr)
+        sys.stderr.write(f"Error: {e}")
         sys.exit(1)

@@ -289,11 +289,9 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
-        // Decode Base64
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
-        // Save file
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
             fs.mkdirSync(savedFolder, { recursive: true });
@@ -309,7 +307,6 @@ const uploadPhotoHandler = async (request, h) => {
 
         console.log(`Photo saved at ${filePath}`);
 
-        // Path to Python script
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
@@ -326,8 +323,14 @@ const uploadPhotoHandler = async (request, h) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        const parsedResult = JSON.parse(scriptOutput.trim());
-                        resolve(parsedResult);
+                        // Cari bagian dengan prefix "Output : "
+                        const outputMatch = scriptOutput.match(/Output : (.+)]\]/);
+                        if (outputMatch && outputMatch[1]) {
+                            const parsedResult = JSON.parse(outputMatch[1] + ']]'); // Tambahkan penutup array
+                            resolve(parsedResult);
+                        } else {
+                            reject(new Error('Failed to parse model output as JSON'));
+                        }
                     } catch (error) {
                         console.error("Raw script output:", scriptOutput);
                         reject(new Error('Failed to parse model output as JSON'));
@@ -354,7 +357,6 @@ const uploadPhotoHandler = async (request, h) => {
         }).code(500);
     }
 };
-
 
 // Ekspor semua handler
 module.exports = {
