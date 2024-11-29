@@ -289,9 +289,11 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
+        // Decode Base64
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
+        // Save file
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
             fs.mkdirSync(savedFolder, { recursive: true });
@@ -307,6 +309,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         console.log(`Photo saved at ${filePath}`);
 
+        // Path to Python script
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
@@ -334,7 +337,7 @@ const uploadPhotoHandler = async (request, h) => {
                 }
             });
         });
-        
+
         return h.response({
             status: 'success',
             message: 'Photo uploaded and processed successfully',
@@ -351,6 +354,7 @@ const uploadPhotoHandler = async (request, h) => {
         }).code(500);
     }
 };
+
 
 // Ekspor semua handler
 module.exports = {
