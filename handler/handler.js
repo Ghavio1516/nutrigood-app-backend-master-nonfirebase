@@ -352,7 +352,6 @@ const uploadPhotoHandler = async (request, h) => {
     }
 };
 
-
 // Ekspor semua handler
 module.exports = {
     addProductHandler,

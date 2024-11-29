@@ -4,6 +4,10 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import os
+
+# Nonaktifkan log TensorFlow
+tf.get_logger().setLevel('ERROR')
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # Fungsi untuk memuat model Keras
