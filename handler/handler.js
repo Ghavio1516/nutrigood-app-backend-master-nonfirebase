@@ -275,24 +275,24 @@ const loginUserHandler = async (request, h) => {
 
 const fs = require('fs');
 const path = require('path');
-const tf = require('@tensorflow/tfjs-node'); // TensorFlow.js untuk Node.js
+const tf = require('@tensorflow/tfjs-node'); // Pastikan menggunakan TensorFlow.js Node.js binding
 
-// Fungsi untuk memuat model TensorFlow (dari .h5)
+// Fungsi untuk memuat model TensorFlow dari file .h5
 const loadModel = async (modelPath) => {
-    return await tf.node.loadLayersModel(`file://${modelPath}`);
+    return await tf.loadLayersModel(`file://${modelPath}`);
 };
 
 // Fungsi untuk memproses gambar menjadi tensor
 const preprocessImage = (imageBuffer) => {
     return tf.node
-        .decodeImage(imageBuffer, 3) // 3 channel untuk RGB
-        .resizeBilinear([128, 128]) // Sesuaikan ukuran input dengan model Anda
+        .decodeImage(imageBuffer, 3) // Decode image ke RGB
+        .resizeBilinear([128, 128]) // Resize gambar ke input model (ubah jika perlu)
         .toFloat()
-        .div(255.0) // Normalisasi ke [0, 1]
+        .div(255.0) // Normalisasi piksel ke [0, 1]
         .expandDims(0); // Tambahkan batch dimension
 };
 
-// Handler upload foto dan prediksi dengan model
+// Handler untuk mengunggah foto dan memprosesnya dengan model
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth; // Dapatkan userId dari token JWT
     const { base64Image } = request.payload;
@@ -352,8 +352,8 @@ const uploadPhotoHandler = async (request, h) => {
 
         // Mengubah output prediksi menjadi string teks (sesuaikan dengan model Anda)
         const nutritionText = predictions
-            .map((line) => line.join(' ')) // Menggabungkan teks pada setiap baris
-            .join('\n'); // Tambahkan newline antar baris
+            .map((line) => line.join(' ')) // Gabungkan prediksi per baris
+            .join('\n'); // Gabungkan baris menjadi teks
 
         return h.response({
             status: 'success',
