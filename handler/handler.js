@@ -277,9 +277,9 @@ const fs = require('fs');
 const path = require('path');
 const tf = require('@tensorflow/tfjs-node'); // TensorFlow.js untuk Node.js
 
-// Fungsi untuk memuat model TensorFlow
+// Fungsi untuk memuat model TensorFlow (dari .h5)
 const loadModel = async (modelPath) => {
-    return await tf.loadLayersModel(`file://${modelPath}`);
+    return await tf.node.loadLayersModel(`file://${modelPath}`);
 };
 
 // Fungsi untuk memproses gambar menjadi tensor
@@ -336,7 +336,7 @@ const uploadPhotoHandler = async (request, h) => {
         console.log(`Photo saved at ${filePath}`);
 
         // Path model
-        const modelPath = path.join(__dirname, '../model/CustomCnn_model.keras');
+        const modelPath = path.join(__dirname, '../model/CustomCnn_model.h5');
 
         // Muat model
         console.log('Loading model...');
@@ -382,5 +382,5 @@ module.exports = {
     deleteProductByIdHandler,
     getTodayProductsHandler,
     getUserDetailsHandler,
-    uploadPhotoHandler
+    uploadPhotoHandler,
 };
