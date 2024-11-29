@@ -2,10 +2,10 @@ import sys
 import json
 import cv2
 import numpy as np
-import tensorflow as tf
 import os
+import tensorflow as tf
 
-# Nonaktifkan log TensorFlow
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -46,9 +46,10 @@ if __name__ == '__main__':
         # Konversi hasil prediksi ke JSON
         predictions_json = predictions.tolist()
 
-        # Cetak hasil sebagai JSON (tanpa log tambahan)
-        print(json.dumps(predictions_json))
+        # Cetak JSON murni tanpa log tambahan
+        sys.stdout.write(json.dumps(predictions_json))
 
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        sys.stderr.write(f"Error: {e}")
         sys.exit(1)
+

@@ -326,7 +326,7 @@ const uploadPhotoHandler = async (request, h) => {
                         const parsedResult = JSON.parse(scriptOutput.trim());
                         resolve(parsedResult);
                     } catch (error) {
-                        console.error("Failed to parse JSON:", scriptOutput);
+                        console.error("Raw script output:", scriptOutput);
                         reject(new Error('Failed to parse model output as JSON'));
                     }
                 } else {
@@ -334,7 +334,7 @@ const uploadPhotoHandler = async (request, h) => {
                 }
             });
         });
-
+        
         return h.response({
             status: 'success',
             message: 'Photo uploaded and processed successfully',
