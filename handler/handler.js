@@ -324,7 +324,7 @@ const uploadPhotoHandler = async (request, h) => {
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
 
         // Jalankan script Python untuk memuat model dan membuat prediksi
-        const pythonProcess = spawn('python', [scriptPath, filePath]);
+        const pythonProcess = spawn('python3', [scriptPath, filePath]); // Gunakan python3
 
         // Tangkap output dari script Python
         let scriptOutput = '';
