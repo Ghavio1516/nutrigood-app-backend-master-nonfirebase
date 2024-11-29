@@ -279,7 +279,7 @@ const tf = require('@tensorflow/tfjs-node'); // TensorFlow.js untuk Node.js
 
 // Fungsi untuk memuat model TensorFlow (dari .h5)
 const loadModel = async (modelPath) => {
-    return await tf.node.loadLayersModel(`file://${modelPath}`);
+    return await tf.loadLayersModel(`file://${modelPath}`);
 };
 
 // Fungsi untuk memproses gambar menjadi tensor
