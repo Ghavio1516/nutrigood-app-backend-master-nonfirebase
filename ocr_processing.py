@@ -19,10 +19,12 @@ def preprocess_image(image_path):
         raise ValueError("Image not found or invalid.")
     
     # Resize dan normalisasi sesuai dengan input model
-    image = cv2.resize(image, (128, 128))  # Sesuaikan ukuran dengan model Anda
+    image = cv2.resize(image, (32, 32))  # Ubah ukuran agar hasil flatten adalah 1024
     image = image.astype('float32') / 255.0  # Normalisasi
+    image = image.flatten()  # Ratakan menjadi 1D array
     image = np.expand_dims(image, axis=0)  # Tambahkan dimensi batch
     return image
+
 
 # Fungsi utama
 if __name__ == '__main__':
