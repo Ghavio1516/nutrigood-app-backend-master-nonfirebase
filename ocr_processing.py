@@ -3,10 +3,12 @@ import json
 import cv2
 import numpy as np
 import tensorflow as tf
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # Fungsi untuk memuat model Keras
 def load_model():
-    model_path = './CustomCnn_model.h5'
+    model_path = "/home/ghavio_rizky_ananda_budiawan_tik/nutrigood-app-backend-master-nonfirebase/model/CustomCnn_model.h5"
     model = tf.keras.models.load_model(model_path)
     return model
 
