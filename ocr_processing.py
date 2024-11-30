@@ -105,6 +105,13 @@ def clean_text(ocr_text):
         clean_text = clean_text.replace(old, new)
     return clean_text.strip()
 
+def normalize_text(text):
+    # Hapus karakter yang tidak perlu
+    text = re.sub(r'[^\w\s.%mg]', ' ', text)
+    # Ganti spasi berlebihan dengan satu spasi
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
 
