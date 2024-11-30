@@ -1,48 +1,3 @@
-# import sys
-# import json
-# import cv2
-# import numpy as np
-# import os
-# import tensorflow as tf
-
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# tf.get_logger().setLevel('ERROR')
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-# def load_model():
-#     model_path = "/home/ghavio_rizky_ananda_budiawan_tik/nutrigood-app-backend-master-nonfirebase/model/CustomCnn_model.keras"
-#     return tf.keras.models.load_model(model_path)
-
-# def preprocess_image(image_path):
-#     image = cv2.imread(image_path)
-#     if image is None:
-#         raise ValueError("Image not found or invalid.")
-    
-#     image = cv2.resize(image, (32, 32)) 
-#     image = image.astype('float32') / 255.0 
-#     image = np.expand_dims(image, axis=0) 
-#     return image
-
-# if __name__ == '__main__':
-#     try:
-#         image_path = sys.argv[1]
-
-#         model = load_model()
-
-#         input_tensor = preprocess_image(image_path)
-
-#         predictions = model.predict(input_tensor)
-
-#         predictions_json = predictions.tolist()
-
-#         print(f"Output : {json.dumps(predictions_json)}")
-
-#     except Exception as e:
-#         sys.stderr.write(f"Error: {e}")
-#         sys.exit(1)
-
-
 import pytesseract
 import cv2
 import numpy as np
@@ -198,12 +153,15 @@ if __name__ == "__main__":
         nutrition_info = parse_nutrition_info(cleaned_text)
         logging.info("Informasi nutrisi yang berhasil diambil:\n%s", json.dumps(nutrition_info, indent=4))
 
-        # Output dalam format JSON
-        output_data = {
-            "Extracted Text": cleaned_text,
-            "Nutrition Information": nutrition_info
-        }
-        print("Output:", json.dumps(output_data, indent=4))
+        # # Output dalam format JSON
+        # output_data = {
+        #     "Extracted Text": cleaned_text,
+        #     "Nutrition Information": nutrition_info
+        # }
+        # print("Output:", json.dumps(output_data, indent=4))
+
+        # Output hanya Nutrition Information
+        print(json.dumps(nutrition_info, indent=4))
 
     except Exception as e:
         logging.error("Error: %s", str(e))
