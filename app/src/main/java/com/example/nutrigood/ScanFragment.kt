@@ -7,12 +7,8 @@ import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
-import android.util.Size
 import android.view.View
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.Toast
+import android.widget.*
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
@@ -36,28 +32,24 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var imageView: ImageView
-    private lateinit var uploadButton: Button // Tombol upload foto
-    private lateinit var progressBar: ProgressBar // Loading bar untuk proses upload
+    private lateinit var uploadButton: Button
+    private lateinit var progressBar: ProgressBar
+    private lateinit var scanResultTextView: TextView // TextView untuk menampilkan hasil scan
     private var imageCapture: ImageCapture? = null
     private var isCameraActive = false
     private var cameraProvider: ProcessCameraProvider? = null
-    private var capturedPhotoFile: File? = null // Referensi file foto
+    private var capturedPhotoFile: File? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val navigateButton: Button = view.findViewById(R.id.btn_navigate_to_form)
-        navigateButton.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, FormFragment())
-                .addToBackStack(null)
-                .commit()
-        }
-
         imageView = view.findViewById(R.id.photo_view)
-        uploadButton = view.findViewById(R.id.btn_upload_photo) // Inisialisasi tombol upload
-        progressBar = view.findViewById(R.id.progress_bar) // Inisialisasi progress bar
-        progressBar.visibility = View.GONE // Sembunyikan progress bar saat awal
+        uploadButton = view.findViewById(R.id.btn_upload_photo)
+        progressBar = view.findViewById(R.id.progress_bar)
+        scanResultTextView = view.findViewById(R.id.tv_scan_result) // Inisialisasi TextView hasil scan
+
+        progressBar.visibility = View.GONE
+        scanResultTextView.visibility = View.GONE // Sembunyikan hasil scan di awal
 
         val takePhotoButton: Button = view.findViewById(R.id.btn_picture_debug)
         takePhotoButton.text = "Take Photo"
@@ -149,10 +141,10 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
             ContextCompat.getMainExecutor(requireContext()),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    capturedPhotoFile = photoFile // Simpan referensi file foto
+                    capturedPhotoFile = photoFile
                     Toast.makeText(requireContext(), "Photo Saved", Toast.LENGTH_SHORT).show()
                     displayPhoto(photoFile)
-                    uploadButton.visibility = View.VISIBLE // Tampilkan tombol upload setelah foto diambil
+                    uploadButton.visibility = View.VISIBLE
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -164,14 +156,14 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
 
     private fun displayPhoto(photoFile: File) {
         val options = BitmapFactory.Options().apply {
-            inSampleSize = 4 // Kurangi ukuran gambar (1/4 resolusi asli)
+            inSampleSize = 4
         }
         val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath, options)
         imageView.setImageBitmap(bitmap)
     }
 
     private fun generateAndUploadBase64(file: File) {
-        progressBar.visibility = View.VISIBLE // Tampilkan progress bar saat proses berlangsung
+        progressBar.visibility = View.VISIBLE
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val fis = FileInputStream(file)
@@ -187,7 +179,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                 Log.e(TAG, "Base64 generation failed", e)
             } finally {
                 withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE // Sembunyikan progress bar setelah selesai
+                    progressBar.visibility = View.GONE
                 }
             }
         }
@@ -210,17 +202,42 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
 
         apiService.uploadPhoto("Bearer $token", payload).enqueue(object : Callback<UploadResponse> {
             override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
+                progressBar.visibility = View.GONE
                 if (response.isSuccessful) {
+                    val responseData = response.body()?.data
+
+                    if (responseData != null) {
+                        val message = responseData.message
+                        val nutritionInfo = responseData.nutrition_info
+
+                        if (message == "Tidak ditemukan") {
+                            scanResultTextView.text = "Hasil Scan: Tidak ditemukan"
+                        } else if (nutritionInfo != null && nutritionInfo.isNotEmpty()) {
+                            val resultText = nutritionInfo.entries.joinToString(separator = "\n") {
+                                "${it.key}: ${it.value}"
+                            }
+                            scanResultTextView.text = "Hasil Scan:\n$resultText"
+                        } else {
+                            scanResultTextView.text = "Hasil Scan tidak ditemukan"
+                        }
+                    } else {
+                        scanResultTextView.text = "Hasil Scan tidak ditemukan"
+                    }
+
+                    scanResultTextView.visibility = View.VISIBLE
                     uploadButton.visibility = View.GONE
-                    Log.e(TAG, "Base64 : ${payload}")
                     Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_LONG).show()
                 } else {
-                    Log.e(TAG, "Failed to upload photo: ${response.errorBody()?.string()}")
-                    Toast.makeText(requireContext(), "Failed to upload photo", Toast.LENGTH_SHORT).show()
+                    val errorMessage = response.errorBody()?.string() ?: "Unknown error"
+                    Log.e(TAG, "Failed to upload photo: $errorMessage")
+                    scanResultTextView.text = "Error: $errorMessage"
+                    scanResultTextView.visibility = View.VISIBLE
+                    Toast.makeText(requireContext(), "Failed to upload photo: $errorMessage", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
+                progressBar.visibility = View.GONE
                 Log.e(TAG, "Network error: ${t.message}")
                 Toast.makeText(requireContext(), "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
             }

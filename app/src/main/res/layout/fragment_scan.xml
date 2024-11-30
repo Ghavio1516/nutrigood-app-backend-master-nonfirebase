@@ -76,6 +76,17 @@
         android:scaleType="centerCrop"
         android:layout_marginBottom="16dp" />
 
+    <TextView
+        android:id="@+id/tv_scan_result"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:visibility="gone"
+        android:text="Hasil Scan:" />
+
+
     <!-- Progress bar untuk upload -->
     <ProgressBar
         android:id="@+id/progress_bar"
