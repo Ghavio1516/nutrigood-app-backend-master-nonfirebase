@@ -312,7 +312,7 @@ const uploadPhotoHandler = async (request, h) => {
         console.log(`Photo saved at: ${filePath}`);
 
         // Execute Python script
-        const scriptPath = path.join(__dirname, '../ocr_processing2.py');
+        const scriptPath = path.join(__dirname, '../ocr_processing.py');
         console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
         const pythonProcess = spawn('python3', [scriptPath, filePath]);
