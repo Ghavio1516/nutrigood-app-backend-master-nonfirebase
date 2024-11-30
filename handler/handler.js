@@ -329,25 +329,20 @@ const uploadPhotoHandler = async (request, h) => {
 
         const result = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {
-                console.log(`Python process exited with code: ${code}`);
                 if (code === 0) {
                     try {
-                        // Parse JSON output from Python script
-                        console.log(`Raw script output: ${scriptOutput}`);
-                        const outputMatch = scriptOutput.match(/Output:\s+({.*})/s);
-                        if (outputMatch && outputMatch[1]) {
-                            const parsedResult = JSON.parse(outputMatch[1]);
-                            resolve(parsedResult);
+                        const output = JSON.parse(scriptOutput.trim());
+                        if (Object.keys(output).length === 0) {
+                            reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
                         } else {
-                            console.error("Failed to parse script output as JSON.");
-                            reject(new Error('Failed to parse script output as JSON'));
+                            resolve(output);
                         }
                     } catch (error) {
-                        console.error("Error parsing script output:", error.message);
-                        reject(new Error('Failed to parse script output as JSON'));
+                        console.error("Raw script output:", scriptOutput);
+                        reject(new Error('Failed to parse script output as JSON.'));
                     }
                 } else {
-                    reject(new Error('Python script exited with an error'));
+                    reject(new Error('Python script exited with error'));
                 }
             });
         });

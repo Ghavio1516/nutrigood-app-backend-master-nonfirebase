@@ -150,8 +150,18 @@ if __name__ == "__main__":
         logging.info("Teks setelah dibersihkan:\n%s", cleaned_text)
 
         # Parsing informasi nutrisi
-        nutrition_info = parse_nutrition_info(cleaned_text)
-        logging.info("Informasi nutrisi yang berhasil diambil:\n%s", json.dumps(nutrition_info, indent=4))
+        try:
+            nutrition_info = parse_nutrition_info(cleaned_text)
+            if not nutrition_info:  # Jika dictionary kosong
+                logging.warning("Tidak ditemukan informasi nutrisi yang valid dalam teks.")
+                print(json.dumps({}))  # Tetap kirimkan JSON kosong untuk diproses backend
+            else:
+                print(json.dumps(nutrition_info, indent=4))
+        except Exception as e:
+            logging.error("Error saat memproses teks: %s", str(e))
+            print(json.dumps({}))  # JSON kosong jika terjadi error
+            sys.exit(1)
+
 
         # # Output dalam format JSON
         # output_data = {
@@ -159,9 +169,6 @@ if __name__ == "__main__":
         #     "Nutrition Information": nutrition_info
         # }
         # print("Output:", json.dumps(output_data, indent=4))
-
-        # Output hanya Nutrition Information
-        print(json.dumps(nutrition_info, indent=4))
 
     except Exception as e:
         logging.error("Error: %s", str(e))
