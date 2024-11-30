@@ -282,6 +282,7 @@ const uploadPhotoHandler = async (request, h) => {
     const { base64Image } = request.payload;
 
     if (!base64Image) {
+        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -289,69 +290,74 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
-        // Konversi base64 menjadi buffer
+        console.log("Starting photo upload and processing...");
+
+        // Decode Base64 and save image
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
-        // Tentukan direktori dan path penyimpanan gambar
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
+            console.log("Creating saved_photos directory...");
             fs.mkdirSync(savedFolder, { recursive: true });
         }
 
-        // Generate nama file yang unik
         const now = new Date();
         const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
         const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
         const finalFileName = `${userId}_${time}-${date}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
 
-        // Simpan buffer ke file
         fs.writeFileSync(filePath, buffer);
+        console.log(`Photo saved at: ${filePath}`);
 
-        console.log(`Photo saved at ${filePath}`);
+        // Execute Python script
+        const scriptPath = path.join(__dirname, '../ocr_processing2.py');
+        console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
-        // Tentukan path ke script Python
-        const scriptPath = path.join(__dirname, '../ocr_processing.py');
-
-        // Jalankan script Python
         const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
-        // Tangkap output dari Python
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
+            console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
         });
 
-        // Tangkap error dari Python
         pythonProcess.stderr.on('data', (data) => {
-            console.error(`Error from Python script: ${data.toString()}`);
+            console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
         });
 
-        // Tunggu proses Python selesai
         const result = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {
+                console.log(`Python process exited with code: ${code}`);
                 if (code === 0) {
                     try {
-                        // Parsing output JSON dari Python
+                        // Parse JSON output from Python script
+                        console.log(`Raw script output: ${scriptOutput}`);
                         const outputMatch = scriptOutput.match(/Output:\s+({.*})/s);
                         if (outputMatch && outputMatch[1]) {
-                            const parsedResult = JSON.parse(outputMatch[1]); // Parsing JSON
+                            const parsedResult = JSON.parse(outputMatch[1]);
                             resolve(parsedResult);
                         } else {
+                            console.error("Failed to parse script output as JSON.");
                             reject(new Error('Failed to parse script output as JSON'));
                         }
                     } catch (error) {
-                        console.error("Raw script output:", scriptOutput);
+                        console.error("Error parsing script output:", error.message);
                         reject(new Error('Failed to parse script output as JSON'));
                     }
                 } else {
-                    reject(new Error('Python script exited with error'));
+                    reject(new Error('Python script exited with an error'));
                 }
             });
         });
 
-        // Response jika sukses
+        // Log the final response data
+        console.log("Final response data sent to client:", {
+            filePath,
+            predictions: result,
+        });
+
         return h.response({
             status: 'success',
             message: 'Photo uploaded and processed successfully',

@@ -55,6 +55,9 @@ import sys
 # Konfigurasi path Tesseract di Ubuntu
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 # Fungsi untuk memuat model kustom
 def load_model():
     model_path = '/home/ghavio_rizky_ananda_budiawan_tik/nutrigood-app-backend-master-nonfirebase/model/my_model_best_model.h5'
