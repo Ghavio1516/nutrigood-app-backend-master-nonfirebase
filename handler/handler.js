@@ -289,51 +289,61 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
+        // Konversi base64 menjadi buffer
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
+        // Tentukan direktori dan path penyimpanan gambar
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
             fs.mkdirSync(savedFolder, { recursive: true });
         }
 
+        // Generate nama file yang unik
         const now = new Date();
         const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
         const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
         const finalFileName = `${userId}_${time}-${date}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
 
+        // Simpan buffer ke file
         fs.writeFileSync(filePath, buffer);
 
         console.log(`Photo saved at ${filePath}`);
 
-        const scriptPath = path.join(__dirname, '../ocr_processing.py');
+        // Tentukan path ke script Python
+        const scriptPath = path.join(__dirname, '../ocr_processing2.py');
+
+        // Jalankan script Python
         const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
+        // Tangkap output dari Python
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
         });
 
+        // Tangkap error dari Python
         pythonProcess.stderr.on('data', (data) => {
             console.error(`Error from Python script: ${data.toString()}`);
         });
 
+        // Tunggu proses Python selesai
         const result = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        // Cari bagian dengan prefix "Output : "
-                        const outputMatch = scriptOutput.match(/Output : (.+)]\]/);
+                        // Parsing output JSON dari Python
+                        const outputMatch = scriptOutput.match(/Output:\s+({.*})/s);
                         if (outputMatch && outputMatch[1]) {
-                            const parsedResult = JSON.parse(outputMatch[1] + ']]'); // Tambahkan penutup array
+                            const parsedResult = JSON.parse(outputMatch[1]); // Parsing JSON
                             resolve(parsedResult);
                         } else {
-                            reject(new Error('Failed to parse model output as JSON'));
+                            reject(new Error('Failed to parse script output as JSON'));
                         }
                     } catch (error) {
                         console.error("Raw script output:", scriptOutput);
-                        reject(new Error('Failed to parse model output as JSON'));
+                        reject(new Error('Failed to parse script output as JSON'));
                     }
                 } else {
                     reject(new Error('Python script exited with error'));
@@ -341,6 +351,7 @@ const uploadPhotoHandler = async (request, h) => {
             });
         });
 
+        // Response jika sukses
         return h.response({
             status: 'success',
             message: 'Photo uploaded and processed successfully',
