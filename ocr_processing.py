@@ -121,52 +121,34 @@ def parse_nutrition_info(extracted_text):
     # Regex untuk setiap data nutrisi
     try:
         serving_size = re.search(r'(Serving Size|Takaran Saji)\s*[:\-\s]*([0-9]+g)', clean_text, re.IGNORECASE)
-        if serving_size:
-            nutrition_data['Serving Size'] = serving_size.group(2)
-        else:
-            print("Serving Size not found")
 
         calories = re.search(r'Calories\s*[:\-\s]*([0-9]+)', clean_text, re.IGNORECASE)
         if calories:
             nutrition_data['Calories'] = int(calories.group(1))
-        else:
-            print("Calories not found")
 
         total_fat = re.search(r'Total Fat.*?([0-9]+g)', clean_text, re.IGNORECASE)
         if total_fat:
             nutrition_data['Total Fat'] = total_fat.group(1)
-        else:
-            print("Total Fat not found")
 
         saturated_fat = re.search(r'Saturated Fat.*?([0-9]+g)', clean_text, re.IGNORECASE)
         if saturated_fat:
             nutrition_data['Saturated Fat'] = saturated_fat.group(1)
-        else:
-            print("Saturated Fat not found")
 
         cholesterol = re.search(r'Cholesterol.*?([0-9]+mg)', clean_text, re.IGNORECASE)
         if cholesterol:
             nutrition_data['Cholesterol'] = cholesterol.group(1)
-        else:
-            print("Cholesterol not found")
 
         sodium = re.search(r'Sodium.*?([0-9]+mg)', clean_text, re.IGNORECASE)
         if sodium:
             nutrition_data['Sodium'] = sodium.group(1)
-        else:
-            print("Sodium not found")
 
         protein = re.search(r'Protein.*?([0-9]+g)', clean_text, re.IGNORECASE)
         if protein:
             nutrition_data['Protein'] = protein.group(1)
-        else:
-            print("Protein not found")
 
         sugars = re.search(r'(Sugars|Gula).*?([0-9]+g)', clean_text, re.IGNORECASE)
         if sugars:
             nutrition_data['Sugars'] = sugars.group(2)
-        else:
-            print("Sugars not found")
 
     except Exception as e:
         print(f"Error parsing nutrition info: {e}")
