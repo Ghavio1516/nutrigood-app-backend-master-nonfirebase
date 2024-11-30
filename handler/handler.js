@@ -332,10 +332,12 @@ const uploadPhotoHandler = async (request, h) => {
                 if (code === 0) {
                     try {
                         const output = JSON.parse(scriptOutput.trim());
-                        if (Object.keys(output).length === 0) {
-                            reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
+                        if (output.message === "Tidak ditemukan") {
+                            resolve({ predictions: null });
+                        } else if (output.nutrition_info && Object.keys(output.nutrition_info).length > 0) {
+                            resolve({ predictions: output.nutrition_info });
                         } else {
-                            resolve(output);
+                            reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
                         }
                     } catch (error) {
                         console.error("Raw script output:", scriptOutput);
@@ -346,6 +348,7 @@ const uploadPhotoHandler = async (request, h) => {
                 }
             });
         });
+        
 
         // Log the final response data
         console.log("Final response data sent to client:", {

@@ -154,12 +154,24 @@ if __name__ == "__main__":
             nutrition_info = parse_nutrition_info(cleaned_text)
             if not nutrition_info:  # Jika dictionary kosong
                 logging.warning("Tidak ditemukan informasi nutrisi yang valid dalam teks.")
-                print(json.dumps({}))  # Tetap kirimkan JSON kosong untuk diproses backend
+                response = {
+                    "message": "Tidak ditemukan",
+                    "nutrition_info": {}
+                }
             else:
-                print(json.dumps(nutrition_info, indent=4))
+                response = {
+                    "message": "Berhasil",
+                    "nutrition_info": nutrition_info
+                }
+
+            print(json.dumps(response, indent=4))
         except Exception as e:
             logging.error("Error saat memproses teks: %s", str(e))
-            print(json.dumps({}))  # JSON kosong jika terjadi error
+            response = {
+                "message": "Error saat memproses gambar",
+                "nutrition_info": {}
+            }
+            print(json.dumps(response, indent=4))
             sys.exit(1)
 
 
