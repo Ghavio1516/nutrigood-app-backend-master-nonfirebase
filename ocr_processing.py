@@ -105,26 +105,88 @@ def clean_text(ocr_text):
         clean_text = clean_text.replace(old, new)
     return clean_text.strip()
 
-# Fungsi untuk parsing informasi nutrisi
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
-    patterns = {
-        'Serving Size': r'(Serving Size|Takaran Saji)[:\-\s]*([0-9]+g)',
-        'Calories': r'Calories[:\-\s]*([0-9]+)',
-        'Total Fat': r'(Total Fat|Lemak total)[:\-\s]*([0-9]+g)',
-        'Saturated Fat': r'(Saturated Fat|Lemak jenuh)[:\-\s]*([0-9]+g)',
-        'Cholesterol': r'(Cholesterol)[:\-\s]*([0-9]+mg)',
-        'Sodium': r'(Sodium|Garam)[:\-\s]*([0-9]+mg)',
-        'Protein': r'(Protein)[:\-\s]*([0-9]+g)',
-        'Sugars': r'(Sugars|Gula)[:\-\s]*([0-9]+g)',
-    }
 
-    for key, pattern in patterns.items():
-        match = re.search(pattern, extracted_text, re.IGNORECASE)
-        if match:
-            nutrition_data[key] = match.group(2)
+    # Normalisasi teks
+    clean_text = normalize_text(extracted_text)
+
+    # Regex untuk setiap data nutrisi
+    try:
+        serving_size = re.search(r'(Serving Size|Takaran Saji)\s*[:\-\s]*([0-9]+g)', clean_text, re.IGNORECASE)
+        if serving_size:
+            nutrition_data['Serving Size'] = serving_size.group(2)
+        else:
+            print("Serving Size not found")
+
+        calories = re.search(r'Calories\s*[:\-\s]*([0-9]+)', clean_text, re.IGNORECASE)
+        if calories:
+            nutrition_data['Calories'] = int(calories.group(1))
+        else:
+            print("Calories not found")
+
+        total_fat = re.search(r'Total Fat.*?([0-9]+g)', clean_text, re.IGNORECASE)
+        if total_fat:
+            nutrition_data['Total Fat'] = total_fat.group(1)
+        else:
+            print("Total Fat not found")
+
+        saturated_fat = re.search(r'Saturated Fat.*?([0-9]+g)', clean_text, re.IGNORECASE)
+        if saturated_fat:
+            nutrition_data['Saturated Fat'] = saturated_fat.group(1)
+        else:
+            print("Saturated Fat not found")
+
+        cholesterol = re.search(r'Cholesterol.*?([0-9]+mg)', clean_text, re.IGNORECASE)
+        if cholesterol:
+            nutrition_data['Cholesterol'] = cholesterol.group(1)
+        else:
+            print("Cholesterol not found")
+
+        sodium = re.search(r'Sodium.*?([0-9]+mg)', clean_text, re.IGNORECASE)
+        if sodium:
+            nutrition_data['Sodium'] = sodium.group(1)
+        else:
+            print("Sodium not found")
+
+        protein = re.search(r'Protein.*?([0-9]+g)', clean_text, re.IGNORECASE)
+        if protein:
+            nutrition_data['Protein'] = protein.group(1)
+        else:
+            print("Protein not found")
+
+        sugars = re.search(r'(Sugars|Gula).*?([0-9]+g)', clean_text, re.IGNORECASE)
+        if sugars:
+            nutrition_data['Sugars'] = sugars.group(2)
+        else:
+            print("Sugars not found")
+
+    except Exception as e:
+        print(f"Error parsing nutrition info: {e}")
 
     return nutrition_data
+
+
+# # Fungsi untuk parsing informasi nutrisi
+# def parse_nutrition_info(extracted_text):
+#     nutrition_data = {}
+#     patterns = {
+#         'Serving Size': r'(Serving Size|Takaran Saji)[:\-\s]*([0-9]+g)',
+#         'Calories': r'Calories[:\-\s]*([0-9]+)',
+#         'Total Fat': r'(Total Fat|Lemak total)[:\-\s]*([0-9]+g)',
+#         'Saturated Fat': r'(Saturated Fat|Lemak jenuh)[:\-\s]*([0-9]+g)',
+#         'Cholesterol': r'(Cholesterol)[:\-\s]*([0-9]+mg)',
+#         'Sodium': r'(Sodium|Garam)[:\-\s]*([0-9]+mg)',
+#         'Protein': r'(Protein)[:\-\s]*([0-9]+g)',
+#         'Sugars': r'(Sugars|Gula)[:\-\s]*([0-9]+g)',
+#     }
+
+#     for key, pattern in patterns.items():
+#         match = re.search(pattern, extracted_text, re.IGNORECASE)
+#         if match:
+#             nutrition_data[key] = match.group(2)
+
+#     return nutrition_data
 
 # Fungsi utama untuk memproses gambar dan mengembalikan informasi nutrisi
 if __name__ == "__main__":
