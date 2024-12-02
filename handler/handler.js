@@ -333,9 +333,15 @@ const uploadPhotoHandler = async (request, h) => {
                     try {
                         const output = JSON.parse(scriptOutput.trim());
                         if (output.message === "Tidak ditemukan") {
-                            resolve({ predictions: null });
+                            resolve({
+                                message: "Tidak ditemukan",
+                                nutrition_info: null,
+                            });
                         } else if (output.nutrition_info && Object.keys(output.nutrition_info).length > 0) {
-                            resolve({ predictions: output.nutrition_info });
+                            resolve({
+                                message: "Berhasil",
+                                nutrition_info: output.nutrition_info,
+                            });
                         } else {
                             reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
                         }
@@ -348,20 +354,20 @@ const uploadPhotoHandler = async (request, h) => {
                 }
             });
         });
-        
 
         // Log the final response data
         console.log("Final response data sent to client:", {
             filePath,
-            predictions: result,
+            message: result.message,
+            nutrition_info: result.nutrition_info,
         });
 
         return h.response({
             status: 'success',
             message: 'Photo uploaded and processed successfully',
             data: {
-                filePath,
-                predictions: result,
+                message: result.message,
+                nutrition_info: result.nutrition_info,
             },
         }).code(201);
     } catch (error) {
@@ -372,6 +378,7 @@ const uploadPhotoHandler = async (request, h) => {
         }).code(500);
     }
 };
+
 
 // Ekspor semua handler
 module.exports = {
