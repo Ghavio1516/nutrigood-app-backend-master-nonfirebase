@@ -116,7 +116,7 @@ def parse_nutrition_info(extracted_text):
         'Cholesterol': r'(Cholesterol)[:\-\s]*([0-9]+mg)',
         'Sodium': r'(Sodium|Garam)[:\-\s]*([0-9]+mg)',
         'Protein': r'(Protein)[:\-\s]*([0-9]+g)',
-        'Sugars': r'(Sugars|Gula)[:\-\s]*([0-9]+g)',
+        'Sugars': r'(Total Sugars|Sugars|Sugar|Gula)[:\-\s]*([0-9]+g)',  # Menambahkan Total Sugars dan variasi lainnya
     }
 
     for key, pattern in patterns.items():
@@ -124,7 +124,10 @@ def parse_nutrition_info(extracted_text):
         if match:
             nutrition_data[key] = match.group(2)
 
+    # Debugging tambahan untuk mencetak hasil parsing
+    logging.info("Informasi nutrisi yang terdeteksi: %s", nutrition_data)
     return nutrition_data
+
 
 # Fungsi utama untuk memproses gambar dan mengembalikan informasi nutrisi
 if __name__ == "__main__":
