@@ -1,97 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
     android:padding="16dp">
 
-    <!-- Tombol untuk navigasi ke FormFragment dan mengambil foto -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="16dp">
+        android:orientation="vertical"
+        android:gravity="center">
 
-        <!-- Tombol Navigasi ke Form -->
-        <Button
-            android:id="@+id/btn_navigate_to_form"
-            android:layout_width="0dp"
+        <!-- Tombol untuk navigasi ke FormFragment dan mengambil foto -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Go to Form"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:orientation="horizontal">
 
-        <!-- Tombol untuk mengambil foto -->
-        <Button
-            android:id="@+id/btn_picture_debug"
-            android:layout_width="0dp"
+            <!-- Tombol Navigasi ke Form -->
+            <Button
+                android:id="@+id/btn_navigate_to_form"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="Go to Form" />
+
+            <!-- Tombol untuk mengambil foto -->
+            <Button
+                android:id="@+id/btn_picture_debug"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="Take Photo" />
+        </LinearLayout>
+
+        <!-- Tombol untuk toggle kamera dan upload foto -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Take Photo"
-            android:layout_marginStart="8dp" />
-    </LinearLayout>
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:orientation="horizontal">
 
-    <!-- Tombol untuk toggle kamera dan upload foto -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="16dp">
+            <!-- Tombol untuk toggle kamera -->
+            <Button
+                android:id="@+id/btn_toggle_camera"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="Turn On Camera" />
 
-        <!-- Tombol untuk toggle kamera -->
-        <Button
-            android:id="@+id/btn_toggle_camera"
-            android:layout_width="0dp"
+            <!-- Tombol untuk upload foto -->
+            <Button
+                android:id="@+id/btn_upload_photo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Upload Photo"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Pratinjau kamera -->
+        <androidx.camera.view.PreviewView
+            android:id="@+id/preview_view"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Gambar hasil foto -->
+        <ImageView
+            android:id="@+id/photo_view"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_marginBottom="16dp"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/tv_scan_result"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Turn On Camera"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginTop="16dp"
+            android:text="Hasil Scan:"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:visibility="gone" />
 
-        <!-- Tombol untuk upload foto -->
-        <Button
-            android:id="@+id/btn_upload_photo"
-            android:layout_width="0dp"
+        <!-- Progress bar untuk upload -->
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Upload Photo"
+            android:layout_marginTop="16dp"
             android:visibility="gone" />
     </LinearLayout>
-
-    <!-- Pratinjau kamera -->
-    <androidx.camera.view.PreviewView
-        android:id="@+id/preview_view"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Gambar hasil foto -->
-    <ImageView
-        android:id="@+id/photo_view"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:scaleType="centerCrop"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:id="@+id/tv_scan_result"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textSize="16sp"
-        android:textColor="@android:color/black"
-        android:visibility="gone"
-        android:text="Hasil Scan:" />
-
-
-    <!-- Progress bar untuk upload -->
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:visibility="gone" />
-</LinearLayout>
+</ScrollView>

@@ -3,7 +3,10 @@ package com.example.nutrigood
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
@@ -154,12 +157,34 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         )
     }
 
+    private fun fixImageRotation(photoPath: String, bitmap: Bitmap): Bitmap {
+        val exifInterface = ExifInterface(photoPath)
+        val orientation = exifInterface.getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_UNDEFINED
+        )
+
+        return when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> rotateBitmap(bitmap, 90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> rotateBitmap(bitmap, 180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> rotateBitmap(bitmap, 270f)
+            else -> bitmap
+        }
+    }
+
+    private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(degrees)
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
     private fun displayPhoto(photoFile: File) {
         val options = BitmapFactory.Options().apply {
             inSampleSize = 4
         }
         val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath, options)
-        imageView.setImageBitmap(bitmap)
+        val rotatedBitmap = fixImageRotation(photoFile.absolutePath, bitmap)
+        imageView.setImageBitmap(rotatedBitmap)
     }
 
     private fun generateAndUploadBase64(file: File) {
