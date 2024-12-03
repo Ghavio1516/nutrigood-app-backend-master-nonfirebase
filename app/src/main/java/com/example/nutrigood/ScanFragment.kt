@@ -23,6 +23,7 @@ import com.data.response.UploadResponse
 import com.data.retrofit.ApiConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Call
@@ -154,33 +155,41 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     }
 
     private fun generateAndUploadBase64(file: File) {
-        progressBar.visibility = View.VISIBLE
+        progressBar.visibility = View.VISIBLE // Tampilkan progress bar
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Baca file dan ubah ke base64
                 val fis = FileInputStream(file)
                 val bytes = fis.readBytes()
                 fis.close()
 
                 val base64String = "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
 
+                // Panggil upload di Main Thread setelah encoding selesai
                 withContext(Dispatchers.Main) {
                     uploadPhoto(base64String, "photo_${System.currentTimeMillis()}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Base64 generation failed", e)
-            } finally {
+
+                // Sembunyikan progress bar jika terjadi kesalahan
                 withContext(Dispatchers.Main) {
                     progressBar.visibility = View.GONE
+                    Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
+
     private fun uploadPhoto(base64Image: String, fileName: String) {
+        progressBar.visibility = View.VISIBLE // ProgressBar tetap aktif saat proses berlangsung
+
         val sharedPreferences = requireActivity().getSharedPreferences("auth", Context.MODE_PRIVATE)
         val token = sharedPreferences.getString("token", "") ?: ""
 
         if (token.isEmpty()) {
+            progressBar.visibility = View.GONE
             Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show()
             return
         }
@@ -193,13 +202,17 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
 
         apiService.uploadPhoto("Bearer $token", payload).enqueue(object : Callback<UploadResponse> {
             override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
+                // Sembunyikan ProgressBar setelah respons diterima
                 progressBar.visibility = View.GONE
+
                 if (response.isSuccessful) {
                     val responseData = response.body()?.data
-
                     if (responseData != null) {
                         val message = responseData.message
                         val nutritionInfo = responseData.nutrition_info
+
+                        scanResultTextView.visibility = View.VISIBLE
+                        uploadButton.visibility = View.GONE
 
                         if (message == "Tidak ditemukan") {
                             scanResultTextView.text = "Hasil Scan: Tidak ditemukan"
@@ -211,29 +224,23 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                         } else {
                             scanResultTextView.text = "Hasil Scan tidak ditemukan"
                         }
-                    } else {
-                        scanResultTextView.text = "Hasil Scan tidak ditemukan"
                     }
-
-                    scanResultTextView.visibility = View.VISIBLE
-                    uploadButton.visibility = View.GONE
                     Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_LONG).show()
                 } else {
                     val errorMessage = response.errorBody()?.string() ?: "Unknown error"
                     Log.e(TAG, "Failed to upload photo: $errorMessage")
-                    scanResultTextView.text = "Error: $errorMessage"
-                    scanResultTextView.visibility = View.VISIBLE
-                    Toast.makeText(requireContext(), "Failed to upload photo: $errorMessage", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Error: $errorMessage", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                progressBar.visibility = View.GONE
+                progressBar.visibility = View.GONE // Sembunyikan ProgressBar jika gagal
                 Log.e(TAG, "Network error: ${t.message}")
                 Toast.makeText(requireContext(), "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
+
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED

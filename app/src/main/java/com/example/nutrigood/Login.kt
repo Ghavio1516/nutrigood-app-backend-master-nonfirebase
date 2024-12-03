@@ -19,6 +19,14 @@ class Login : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Cek apakah user sudah login
+        if (isUserLoggedIn()) {
+            navigateToMainActivity(showScanFragment = true)
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_login)
 
         // Inisialisasi elemen UI
@@ -28,11 +36,11 @@ class Login : AppCompatActivity() {
         val tvRegisterAccount = findViewById<TextView>(R.id.register_account)
         val tvAboutUs = findViewById<TextView>(R.id.about_us)
 
-        tvRegisterAccount.setOnClickListener{
+        tvRegisterAccount.setOnClickListener {
             val intent = Intent(this, Register::class.java)
             startActivity(intent)
         }
-        tvAboutUs.setOnClickListener{
+        tvAboutUs.setOnClickListener {
             val intent = Intent(this, AboutUs::class.java)
             startActivity(intent)
         }
@@ -50,7 +58,6 @@ class Login : AppCompatActivity() {
             } else {
                 // Membuat objek LoginRequest dan mengirimkan ke server
                 val loginRequest = LoginRequest(email, password)
-                Log.d("LoginRequest", "Request: Email=${loginRequest.getEmail()}, Password=*******") // Sembunyikan password di log
                 loginUser(loginRequest)
             }
         }
@@ -62,26 +69,20 @@ class Login : AppCompatActivity() {
         // Kirim permintaan login ke server
         apiService.loginUser(request).enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                Log.d("LoginResponse", "Response Code: ${response.code()}")
-
                 val loginResponse = response.body()
                 if (loginResponse != null) {
                     val token = loginResponse.data?.token
-                    Log.d("LoginResponse", "Token: $token")
                     if (token != null) {
-                        saveToken(token)
-                        startActivity(Intent(this@Login, MainActivity::class.java))
+                        saveLoginStatus(token)
+                        navigateToMainActivity(showScanFragment = true)
                         finish()
                     } else {
-                        Log.e("LoginResponse", "Token is null")
                         Toast.makeText(this@Login, "Failed to retrieve token from server", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Log.e("LoginResponse", "Response Body is null")
                     Toast.makeText(this@Login, "Login failed: ${response.message()}", Toast.LENGTH_SHORT).show()
                 }
             }
-
 
             override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
                 Toast.makeText(this@Login, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
@@ -90,12 +91,22 @@ class Login : AppCompatActivity() {
         })
     }
 
-    private fun saveToken(token: String) {
-        // Simpan token ke SharedPreferences
+    private fun saveLoginStatus(token: String) {
         val sharedPreferences = getSharedPreferences("auth", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
-        editor.putString("token", token)
+        editor.putString("token", token) // Simpan token
+        editor.putBoolean("isLoggedIn", true) // Tandai user sudah login
         editor.apply()
-        Log.d("SaveToken", "Token saved successfully")
+    }
+
+    private fun isUserLoggedIn(): Boolean {
+        val sharedPreferences = getSharedPreferences("auth", MODE_PRIVATE)
+        return sharedPreferences.getBoolean("isLoggedIn", false)
+    }
+
+    private fun navigateToMainActivity(showScanFragment: Boolean) {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.putExtra("showScanFragment", showScanFragment)
+        startActivity(intent)
     }
 }

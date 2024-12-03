@@ -19,4 +19,13 @@
         app:menu="@menu/bottom_nav_menu"
         app:itemTextColor="@color/white"/>
 
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:indeterminate="true" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

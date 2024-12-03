@@ -11,6 +11,25 @@
         android:orientation="vertical"
         android:gravity="center">
 
+        <FrameLayout
+            android:id="@+id/camera_and_photo_container"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginBottom="16dp">
+
+            <androidx.camera.view.PreviewView
+                android:id="@+id/preview_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <ImageView
+                android:id="@+id/photo_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+        </FrameLayout>
+
         <!-- Tombol untuk navigasi ke FormFragment dan mengambil foto -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -26,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
                 android:layout_weight="1"
-                android:text="Go to Form" />
+                android:text="Add to history" />
 
             <!-- Tombol untuk mengambil foto -->
             <Button
@@ -52,28 +71,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Upload Photo"
+                android:text="Scan Photo"
                 android:visibility="gone" />
         </LinearLayout>
-
-        <FrameLayout
-            android:id="@+id/camera_and_photo_container"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:layout_marginBottom="16dp">
-
-            <androidx.camera.view.PreviewView
-                android:id="@+id/preview_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-            <ImageView
-                android:id="@+id/photo_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:visibility="gone" />
-        </FrameLayout>
 
         <TextView
             android:id="@+id/tv_scan_result"

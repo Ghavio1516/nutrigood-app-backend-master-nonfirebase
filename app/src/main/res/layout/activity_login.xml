@@ -63,9 +63,6 @@
         app:layout_constraintWidth_percent="0.8" />
 
 
-
-
-
     <TextView
         android:id="@+id/register_account"
         android:layout_width="wrap_content"
