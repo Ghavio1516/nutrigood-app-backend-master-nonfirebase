@@ -94,12 +94,12 @@ def clean_text(ocr_text):
     clean_text = re.sub(r'[^\w\s%:,.()/-]', '', ocr_text)
     clean_text = re.sub(r'\s{2,}', ' ', clean_text)  # Mengganti spasi ganda
     replacements = {
-        'Energitotal': 'Energi total',
-        'Lemaktotal': 'Lemak total',
+        # 'Energitotal': 'Energi total',
+        # 'Lemaktotal': 'Lemak total',
+        # 'Takaran Saji': 'Serving Size',
+        # 'natrium': 'Sodium',
         'Kalori': 'Calories',
         'Gula': 'Sugars',
-        'Takaran Saji': 'Serving Size',
-        'natrium': 'Sodium',
     }
     for old, new in replacements.items():
         clean_text = clean_text.replace(old, new)
@@ -109,13 +109,13 @@ def clean_text(ocr_text):
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
     patterns = {
-        'Serving Size': r'(Serving Size|Takaran Saji)[:\-\s]*([0-9]+g)',
+        # 'Serving Size': r'(Serving Size|Takaran Saji)[:\-\s]*([0-9]+g)',
+        # 'Total Fat': r'(Total Fat|Lemak total)[:\-\s]*([0-9]+g)',
+        # 'Saturated Fat': r'(Saturated Fat|Lemak jenuh)[:\-\s]*([0-9]+g)',
+        # 'Cholesterol': r'(Cholesterol)[:\-\s]*([0-9]+mg)',
+        # 'Sodium': r'(Sodium|Garam)[:\-\s]*([0-9]+mg)',
+        # 'Protein': r'(Protein)[:\-\s]*([0-9]+g)',
         'Calories': r'Calories[:\-\s]*([0-9]+)',
-        'Total Fat': r'(Total Fat|Lemak total)[:\-\s]*([0-9]+g)',
-        'Saturated Fat': r'(Saturated Fat|Lemak jenuh)[:\-\s]*([0-9]+g)',
-        'Cholesterol': r'(Cholesterol)[:\-\s]*([0-9]+mg)',
-        'Sodium': r'(Sodium|Garam)[:\-\s]*([0-9]+mg)',
-        'Protein': r'(Protein)[:\-\s]*([0-9]+g)',
         'Sugars': r'(Total Sugars|Sugars|Sugar|Gula)[:\-\s]*([0-9]+g)',  # Menambahkan Total Sugars dan variasi lainnya
     }
 
