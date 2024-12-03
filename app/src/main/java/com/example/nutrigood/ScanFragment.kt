@@ -14,7 +14,9 @@ import android.view.View
 import android.widget.*
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.data.response.UploadResponse
@@ -38,7 +40,6 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     private lateinit var uploadButton: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var scanResultTextView: TextView // TextView untuk menampilkan hasil scan
-    private var imageCapture: ImageCapture? = null
     private var isCameraActive = false
     private var cameraProvider: ProcessCameraProvider? = null
     private var capturedPhotoFile: File? = null
@@ -49,16 +50,30 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         imageView = view.findViewById(R.id.photo_view)
         uploadButton = view.findViewById(R.id.btn_upload_photo)
         progressBar = view.findViewById(R.id.progress_bar)
-        scanResultTextView = view.findViewById(R.id.tv_scan_result) // Inisialisasi TextView hasil scan
+        scanResultTextView = view.findViewById(R.id.tv_scan_result)
 
         progressBar.visibility = View.GONE
-        scanResultTextView.visibility = View.GONE // Sembunyikan hasil scan di awal
+        scanResultTextView.visibility = View.GONE
+        uploadButton.visibility = View.GONE
+
+        parentFragmentManager.setFragmentResultListener("photoCaptured", viewLifecycleOwner) { _, bundle ->
+            val photoFilePath = bundle.getString("photoFilePath")
+            if (photoFilePath != null) {
+                val photoFile = File(photoFilePath)
+                capturedPhotoFile = photoFile // Save the photo file reference
+                displayPhoto(photoFile)
+                showPhotoView() // Show the photo in the image view
+
+                // Make the upload button visible after photo is captured
+                uploadButton.visibility = View.VISIBLE
+            }
+        }
 
         val takePhotoButton: Button = view.findViewById(R.id.btn_picture_debug)
         takePhotoButton.text = "Take Photo"
         takePhotoButton.setOnClickListener {
             if (allPermissionsGranted()) {
-                takePicture()
+                openCameraFragment() // Open Camera Fragment
             } else {
                 ActivityCompat.requestPermissions(
                     requireActivity(),
@@ -74,87 +89,30 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
             } ?: Toast.makeText(requireContext(), "No photo to upload", Toast.LENGTH_SHORT).show()
         }
 
-        val toggleCameraButton: Button = view.findViewById(R.id.btn_toggle_camera)
-        toggleCameraButton.text = "Turn On Camera"
-        toggleCameraButton.setOnClickListener {
-            if (isCameraActive) {
-                stopCamera()
-                toggleCameraButton.text = "Turn On Camera"
-            } else {
-                if (allPermissionsGranted()) {
-                    startCamera()
-                    toggleCameraButton.text = "Turn Off Camera"
-                } else {
-                    ActivityCompat.requestPermissions(
-                        requireActivity(),
-                        REQUIRED_PERMISSIONS,
-                        CAMERA_REQUEST_CODE
-                    )
-                }
-            }
-        }
-
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
-    private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+    private fun openCameraFragment() {
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, CameraFragment())
+            .addToBackStack(null)  // Add this to the back stack to allow backward navigation
+            .commit()
+    }
 
-        cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(requireView().findViewById<androidx.camera.view.PreviewView>(R.id.preview_view).surfaceProvider)
-            }
 
-            imageCapture = ImageCapture.Builder().build()
 
-            try {
-                cameraProvider?.unbindAll()
-                cameraProvider?.bindToLifecycle(
-                    viewLifecycleOwner,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
-                    imageCapture
-                )
-                isCameraActive = true
-                Log.d(TAG, "Camera started")
-            } catch (exc: Exception) {
-                Log.e(TAG, "Use case binding failed", exc)
-            }
-        }, ContextCompat.getMainExecutor(requireContext()))
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            REQUIRED_PERMISSIONS,
+            CAMERA_REQUEST_CODE
+        )
     }
 
     private fun stopCamera() {
         cameraProvider?.unbindAll()
         isCameraActive = false
         Log.d(TAG, "Camera stopped")
-    }
-
-    private fun takePicture() {
-        if (!isCameraActive) {
-            Toast.makeText(requireContext(), "Camera is not active", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val photoFile = File(requireContext().externalCacheDir, "${System.currentTimeMillis()}.jpg")
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-        imageCapture?.takePicture(
-            outputOptions,
-            ContextCompat.getMainExecutor(requireContext()),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    capturedPhotoFile = photoFile
-                    Toast.makeText(requireContext(), "Photo Saved", Toast.LENGTH_SHORT).show()
-                    displayPhoto(photoFile)
-                    uploadButton.visibility = View.VISIBLE
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    Log.e(TAG, "Photo capture failed: ${exception.message}", exception)
-                }
-            }
-        )
     }
 
     private fun fixImageRotation(photoPath: String, bitmap: Bitmap): Bitmap {
@@ -179,12 +137,20 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     }
 
     private fun displayPhoto(photoFile: File) {
-        val options = BitmapFactory.Options().apply {
-            inSampleSize = 4
-        }
+        val options = BitmapFactory.Options().apply { inSampleSize = 4 }
         val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath, options)
         val rotatedBitmap = fixImageRotation(photoFile.absolutePath, bitmap)
         imageView.setImageBitmap(rotatedBitmap)
+    }
+
+    private fun showPreviewView() {
+        view?.findViewById<PreviewView>(R.id.preview_view)?.visibility = View.VISIBLE
+        imageView.visibility = View.GONE
+    }
+
+    private fun showPhotoView() {
+        view?.findViewById<PreviewView>(R.id.preview_view)?.visibility = View.GONE
+        imageView.visibility = View.VISIBLE
     }
 
     private fun generateAndUploadBase64(file: File) {

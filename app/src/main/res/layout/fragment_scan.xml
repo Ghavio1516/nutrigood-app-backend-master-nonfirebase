@@ -46,15 +46,6 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <!-- Tombol untuk toggle kamera -->
-            <Button
-                android:id="@+id/btn_toggle_camera"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:text="Turn On Camera" />
-
             <!-- Tombol untuk upload foto -->
             <Button
                 android:id="@+id/btn_upload_photo"
@@ -65,20 +56,24 @@
                 android:visibility="gone" />
         </LinearLayout>
 
-        <!-- Pratinjau kamera -->
-        <androidx.camera.view.PreviewView
-            android:id="@+id/preview_view"
+        <FrameLayout
+            android:id="@+id/camera_and_photo_container"
             android:layout_width="match_parent"
             android:layout_height="300dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp">
 
-        <!-- Gambar hasil foto -->
-        <ImageView
-            android:id="@+id/photo_view"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_marginBottom="16dp"
-            android:scaleType="centerCrop" />
+            <androidx.camera.view.PreviewView
+                android:id="@+id/preview_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <ImageView
+                android:id="@+id/photo_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tv_scan_result"
