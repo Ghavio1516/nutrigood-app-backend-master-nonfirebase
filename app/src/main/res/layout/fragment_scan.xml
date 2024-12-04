@@ -38,14 +38,13 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <!-- Tombol Navigasi ke Form -->
             <Button
-                android:id="@+id/btn_navigate_to_form"
+                android:id="@+id/btn_open_gallery"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
                 android:layout_weight="1"
-                android:text="Add to history" />
+                android:backgroundTint="@color/green"
+                android:text="Open Gallery" />
 
             <!-- Tombol untuk mengambil foto -->
             <Button
@@ -54,6 +53,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
+                android:backgroundTint="@color/green"
                 android:text="Take Photo" />
         </LinearLayout>
 
@@ -67,7 +67,7 @@
 
             <!-- Tombol untuk upload foto -->
             <Button
-                android:id="@+id/btn_upload_photo"
+                android:id="@+id/btn_scan_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

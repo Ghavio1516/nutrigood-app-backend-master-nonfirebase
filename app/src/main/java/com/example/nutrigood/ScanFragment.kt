@@ -2,11 +2,13 @@ package com.example.nutrigood
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
+import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
@@ -23,7 +25,6 @@ import com.data.response.UploadResponse
 import com.data.retrofit.ApiConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Call
@@ -38,7 +39,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var imageView: ImageView
-    private lateinit var uploadButton: Button
+    private lateinit var scanButton: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var scanResultTextView: TextView // TextView untuk menampilkan hasil scan
     private var isCameraActive = false
@@ -49,13 +50,13 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         super.onViewCreated(view, savedInstanceState)
 
         imageView = view.findViewById(R.id.photo_view)
-        uploadButton = view.findViewById(R.id.btn_upload_photo)
+        scanButton = view.findViewById(R.id.btn_scan_button)
         progressBar = view.findViewById(R.id.progress_bar)
         scanResultTextView = view.findViewById(R.id.tv_scan_result)
 
         progressBar.visibility = View.GONE
         scanResultTextView.visibility = View.GONE
-        uploadButton.visibility = View.GONE
+        scanButton.visibility = View.GONE
 
         parentFragmentManager.setFragmentResultListener("photoCaptured", viewLifecycleOwner) { _, bundle ->
             val photoFilePath = bundle.getString("photoFilePath")
@@ -66,7 +67,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                 showPhotoView() // Show the photo in the image view
 
                 // Make the upload button visible after photo is captured
-                uploadButton.visibility = View.VISIBLE
+                scanButton.visibility = View.VISIBLE
             }
         }
 
@@ -84,10 +85,16 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
             }
         }
 
-        uploadButton.setOnClickListener {
+        scanButton.setOnClickListener {
             capturedPhotoFile?.let {
                 generateAndUploadBase64(it)
             } ?: Toast.makeText(requireContext(), "No photo to upload", Toast.LENGTH_SHORT).show()
+        }
+
+        // Open Gallery Button functionality
+        val openGalleryButton: Button = view.findViewById(R.id.btn_open_gallery)
+        openGalleryButton.setOnClickListener {
+            openGallery()
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -100,7 +107,11 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
             .commit()
     }
 
-
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        intent.type = "image/*" // Hanya menampilkan gambar
+        startActivityForResult(intent, GALLERY_REQUEST_CODE)
+    }
 
     private fun requestCameraPermission() {
         ActivityCompat.requestPermissions(
@@ -181,7 +192,6 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         }
     }
 
-
     private fun uploadPhoto(base64Image: String, fileName: String) {
         progressBar.visibility = View.VISIBLE // ProgressBar tetap aktif saat proses berlangsung
 
@@ -212,7 +222,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                         val nutritionInfo = responseData.nutrition_info
 
                         scanResultTextView.visibility = View.VISIBLE
-                        uploadButton.visibility = View.GONE
+                        scanButton.visibility = View.GONE
 
                         if (message == "Tidak ditemukan") {
                             scanResultTextView.text = "Hasil Scan: Tidak ditemukan"
@@ -241,20 +251,21 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         })
     }
 
-
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(
+            requireContext(), it
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onDestroyView() {
+        super.onDestroyView()
         cameraExecutor.shutdown()
-        stopCamera()
     }
 
     companion object {
         private const val TAG = "ScanFragment"
         private const val CAMERA_REQUEST_CODE = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+        private const val GALLERY_REQUEST_CODE = 1000
     }
 }

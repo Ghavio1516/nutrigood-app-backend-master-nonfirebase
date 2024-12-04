@@ -14,7 +14,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class FormFragment : Fragment() {
+class HistoryFragment : Fragment() {
 
     private lateinit var etProductName: EditText
     private lateinit var etSugarContent: EditText
@@ -23,7 +23,7 @@ class FormFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val binding = inflater.inflate(R.layout.fragment_form, container, false)
+        val binding = inflater.inflate(R.layout.fragment_history, container, false)
 
         etProductName = binding.findViewById(R.id.et_product_name)
         etSugarContent = binding.findViewById(R.id.et_sugar_content)

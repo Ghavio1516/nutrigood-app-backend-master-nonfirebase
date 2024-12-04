@@ -15,6 +15,6 @@
 
     <fragment
         android:id="@+id/formFragment"
-        android:name="com.example.nutrigood.FormFragment"
+        android:name="com.example.nutrigood.HistoryFragment"
         android:label="Form" />
 </navigation>
