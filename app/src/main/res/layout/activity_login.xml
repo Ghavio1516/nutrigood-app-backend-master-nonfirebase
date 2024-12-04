@@ -73,7 +73,7 @@
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:backgroundTint="@color/white"
+        android:backgroundTint="@color/yellow"
         android:minHeight="48dp"
         android:padding="16dp"
         android:text="Login"
