@@ -32,7 +32,20 @@ class Register : AppCompatActivity() {
 
         // Set data untuk spinner
         val diabetesOptions = arrayOf("Yes", "No")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, diabetesOptions)
+        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, diabetesOptions) {
+            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getView(position, convertView, parent)
+                (view as android.widget.TextView).setTextColor(resources.getColor(android.R.color.black)) // Set spinner text color
+                return view
+            }
+
+            override fun getDropDownView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getDropDownView(position, convertView, parent)
+                view.setBackgroundColor(resources.getColor(android.R.color.white)) // Set dropdown background to white
+                (view as android.widget.TextView).setTextColor(resources.getColor(android.R.color.black)) // Set dropdown text color to black
+                return view
+            }
+        }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerDiabetes.adapter = adapter
 
