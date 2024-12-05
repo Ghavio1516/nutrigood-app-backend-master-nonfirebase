@@ -91,8 +91,11 @@ def extract_text_from_block(image):
 
 # Fungsi untuk membersihkan teks hasil OCR
 def clean_text(ocr_text):
+    # Hapus karakter yang tidak relevan
     clean_text = re.sub(r'[^\w\s%:,.()/-]', '', ocr_text)
-    clean_text = re.sub(r'\s{2,}', ' ', clean_text)  # Mengganti spasi ganda
+    # Hapus spasi berlebih
+    clean_text = re.sub(r'\s{2,}', ' ', clean_text)
+    # Ganti variasi kata yang dikenal
     replacements = {
         'Energitotal': 'Energi total',
         'Lemaktotal': 'Lemak total',
@@ -100,10 +103,13 @@ def clean_text(ocr_text):
         'natrium': 'Sodium',
         'Kalori': 'Calories',
         'Gula': 'Sugars',
+        'TotalSugar': 'Total Sugars',
+        'TotalSugar': 'Total Sugars',  # Menambahkan variasi lain
     }
     for old, new in replacements.items():
         clean_text = clean_text.replace(old, new)
     return clean_text.strip()
+
 
 # Fungsi untuk parsing informasi nutrisi
 def parse_nutrition_info(extracted_text):
@@ -116,19 +122,20 @@ def parse_nutrition_info(extracted_text):
         'Sodium': r'(Sodium|Garam)[:\-\s]*(\d+mg)',
         'Protein': r'(Protein)[:\-\s]*(\d+g)',
         'Calories': r'Calories[:\-\s]*(\d+)',
-        'Sugars': r'(Total\s*Sugars|Sugars|Sugar|Gula)[:\-\s]*(\d+g)',
+        'Sugars': r'(Total\s*Sugars|Sugars|Sugar|Gula)[:\-\s]*\d+g'
     }
 
     for key, pattern in patterns.items():
         try:
             match = re.search(pattern, extracted_text, re.IGNORECASE)
             if match:
-                nutrition_data[key] = match.group(2)
+                nutrition_data[key] = match.group(2).strip()  # Tambahkan strip() untuk menghapus spasi ekstra
                 logging.info(f"Match found for {key}: {match.group(2)}")
             else:
                 logging.warning(f"No match found for {key} using pattern {pattern}")
         except Exception as e:
             logging.error(f"Error processing key {key}: {str(e)}")
+
 
     return nutrition_data
 
