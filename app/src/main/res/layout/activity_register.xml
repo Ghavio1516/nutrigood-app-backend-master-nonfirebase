@@ -150,7 +150,7 @@
             android:layout_width="150dp"
             android:layout_height="48dp"
             android:backgroundTint="@color/yellow"
-            android:text="Submit"
+            android:text="Create Account"
             android:textAllCaps="false"
             android:textColor="@color/green"/>
     </LinearLayout>

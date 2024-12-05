@@ -37,23 +37,29 @@
             android:orientation="horizontal">
 
             <Button
+                android:id="@+id/btn_picture_debug"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="@color/yellow"
+                android:text="Take Photo"
+                android:textColor="@color/black"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+            <Button
                 android:id="@+id/btn_open_gallery"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:backgroundTint="@color/green"
+                android:backgroundTint="@color/yellow"
                 android:text="Open Gallery"
-                android:textColor="?android:textColorPrimary"/>
-
-            <Button
-                android:id="@+id/btn_picture_debug"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:backgroundTint="@color/green"
-                android:text="Take Photo"
-                android:textColor="?android:textColorPrimary"/>
+                android:textColor="@color/black"/>
         </LinearLayout>
 
         <LinearLayout
@@ -69,8 +75,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Scan Photo"
+                android:backgroundTint="@color/yellow"
                 android:visibility="gone"
-                android:textColor="?android:textColorPrimary"/>
+                android:textColor="@color/black"/>
         </LinearLayout>
 
         <TextView
@@ -89,8 +96,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Add to History"
+            android:backgroundTint="@color/yellow"
             android:visibility="gone"
-            android:textColor="?android:textColorPrimary"/>
+            android:textColor="@color/black"/>
 
         <ProgressBar
             android:id="@+id/progress_bar"
