@@ -17,34 +17,55 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/tv_email"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Email"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        app:layout_constraintStart_toStartOf="@+id/email"
+        app:layout_constraintTop_toBottomOf="@id/logo"
+        android:layout_marginBottom="8dp" />
+
     <EditText
         android:id="@+id/email"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/rounded_edit_text"
-        android:hint="Email"
-        android:inputType="textEmailAddress"
         android:minHeight="48dp"
+        android:hint="Enter your email"
+        android:inputType="textEmailAddress"
+        android:background="@drawable/rounded_edit_text"
         android:padding="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/logo"
+        app:layout_constraintTop_toBottomOf="@id/tv_email"
         app:layout_constraintWidth_percent="0.8" />
+
+    <TextView
+        android:id="@+id/tv_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Password"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        app:layout_constraintStart_toStartOf="@+id/password"
+        app:layout_constraintTop_toBottomOf="@id/email"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp" />
 
     <EditText
         android:id="@+id/password"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/rounded_edit_text"
+        android:minHeight="48dp"
         android:hint="Password"
         android:inputType="textPassword"
-        android:minHeight="48dp"
+        android:background="@drawable/rounded_edit_text"
         android:padding="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/email"
+        app:layout_constraintTop_toBottomOf="@id/tv_password"
         app:layout_constraintWidth_percent="0.8" />
 
     <Button
@@ -52,7 +73,7 @@
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:backgroundTint="@color/white"
+        android:backgroundTint="@color/yellow"
         android:minHeight="48dp"
         android:padding="16dp"
         android:text="Login"
