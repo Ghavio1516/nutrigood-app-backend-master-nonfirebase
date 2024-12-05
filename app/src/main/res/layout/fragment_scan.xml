@@ -1,5 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
-
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -30,7 +28,6 @@
                 android:visibility="gone" />
         </FrameLayout>
 
-        <!-- Tombol untuk navigasi ke FormFragment dan mengambil foto -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -46,7 +43,6 @@
                 android:backgroundTint="@color/green"
                 android:text="Open Gallery" />
 
-            <!-- Tombol untuk mengambil foto -->
             <Button
                 android:id="@+id/btn_picture_debug"
                 android:layout_width="0dp"
@@ -57,7 +53,6 @@
                 android:text="Take Photo" />
         </LinearLayout>
 
-        <!-- Tombol untuk toggle kamera dan upload foto -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -65,7 +60,6 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <!-- Tombol untuk upload foto -->
             <Button
                 android:id="@+id/btn_scan_button"
                 android:layout_width="0dp"
@@ -85,7 +79,14 @@
             android:textSize="16sp"
             android:visibility="gone" />
 
-        <!-- Progress bar untuk upload -->
+        <Button
+            android:id="@+id/btn_add_to_history"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Add to History"
+            android:visibility="gone" />
+
         <ProgressBar
             android:id="@+id/progress_bar"
             android:layout_width="wrap_content"

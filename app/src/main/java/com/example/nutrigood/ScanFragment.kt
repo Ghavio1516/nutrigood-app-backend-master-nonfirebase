@@ -32,6 +32,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -45,6 +46,8 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     private var isCameraActive = false
     private var cameraProvider: ProcessCameraProvider? = null
     private var capturedPhotoFile: File? = null
+    private lateinit var addToHistoryButton: Button
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -53,10 +56,19 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         scanButton = view.findViewById(R.id.btn_scan_button)
         progressBar = view.findViewById(R.id.progress_bar)
         scanResultTextView = view.findViewById(R.id.tv_scan_result)
+        addToHistoryButton = view.findViewById(R.id.btn_add_to_history)
 
         progressBar.visibility = View.GONE
         scanResultTextView.visibility = View.GONE
         scanButton.visibility = View.GONE
+        addToHistoryButton.visibility = View.GONE
+
+
+        addToHistoryButton.setOnClickListener {
+            saveToHistory() // Simpan data ke history terlebih dahulu
+            navigateToHistoryFragment() // Navigasi ke HistoryFragment
+        }
+
 
         parentFragmentManager.setFragmentResultListener("photoCaptured", viewLifecycleOwner) { _, bundle ->
             val photoFilePath = bundle.getString("photoFilePath")
@@ -84,6 +96,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                 )
             }
         }
+
 
         scanButton.setOnClickListener {
             capturedPhotoFile?.let {
@@ -169,7 +182,10 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         progressBar.visibility = View.VISIBLE // Tampilkan progress bar
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Baca file dan ubah ke base64
+
+
+
+                // Baca file yang dikompresi dan ubah ke base64
                 val fis = FileInputStream(file)
                 val bytes = fis.readBytes()
                 fis.close()
@@ -191,6 +207,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
             }
         }
     }
+
 
     private fun uploadPhoto(base64Image: String, fileName: String) {
         progressBar.visibility = View.VISIBLE // ProgressBar tetap aktif saat proses berlangsung
@@ -223,6 +240,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
 
                         scanResultTextView.visibility = View.VISIBLE
                         scanButton.visibility = View.GONE
+                        addToHistoryButton.visibility = View.VISIBLE
 
                         if (message == "Tidak ditemukan") {
                             scanResultTextView.text = "Hasil Scan: Tidak ditemukan"
@@ -255,6 +273,40 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         ContextCompat.checkSelfPermission(
             requireContext(), it
         ) == PackageManager.PERMISSION_GRANTED
+    }
+    private fun saveToHistory() {
+        val sharedPreferences = requireActivity().getSharedPreferences("history", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+
+        val currentResult = scanResultTextView.text.toString()
+
+        if (currentResult.isNotEmpty()) {
+            // Simpan hasil scan ke dalam daftar history
+            val existingHistory = sharedPreferences.getStringSet("historyList", mutableSetOf()) ?: mutableSetOf()
+            existingHistory.add(currentResult)
+            editor.putStringSet("historyList", existingHistory)
+            editor.apply()
+
+            Toast.makeText(requireContext(), "Added to history", Toast.LENGTH_SHORT).show()
+            addToHistoryButton.visibility = View.GONE // Sembunyikan tombol setelah ditambahkan ke history
+        } else {
+            Toast.makeText(requireContext(), "No result to add", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun navigateToHistoryFragment() {
+        val transaction = parentFragmentManager.beginTransaction()
+        val historyFragment = HistoryFragment()
+
+        // Kirim hasil scan sebagai argumen
+        val bundle = Bundle()
+        val currentResult = scanResultTextView.text.toString()
+        bundle.putString("scanResult", currentResult)
+        historyFragment.arguments = bundle
+
+        transaction.replace(R.id.fragment_container, historyFragment)
+        transaction.addToBackStack(null)
+        transaction.commit()
     }
 
     override fun onDestroyView() {

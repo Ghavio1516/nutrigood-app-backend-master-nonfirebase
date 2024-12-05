@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7F7F7"
+    android:background="?android:colorBackground"
     android:clipToPadding="false"
     android:orientation="vertical"
     android:padding="16dp">
@@ -37,9 +37,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="8dp"
-        android:background="@drawable/recyclerview_bg"
+        android:background="?android:colorBackground"
         android:clipToPadding="false"
         android:padding="8dp"
-        android:scrollbars="vertical" />
+        android:scrollbars="vertical"
+        android:textColor="?android:textColorPrimary"/>
 
 </LinearLayout>

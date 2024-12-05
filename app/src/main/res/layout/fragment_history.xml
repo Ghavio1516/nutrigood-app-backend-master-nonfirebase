@@ -12,11 +12,12 @@
         android:hint="Nama Produk" />
 
     <EditText
-        android:id="@+id/et_sugar_content"
+        android:id="@+id/et_kandungan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Kandungan Gula "
+        android:hint="Kandungan "
         android:inputType="numberDecimal" />
+
 
     <Button
         android:id="@+id/btn_save_product"

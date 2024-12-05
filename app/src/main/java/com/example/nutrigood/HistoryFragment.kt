@@ -17,7 +17,7 @@ import retrofit2.Response
 class HistoryFragment : Fragment() {
 
     private lateinit var etProductName: EditText
-    private lateinit var etSugarContent: EditText
+    private lateinit var etKandungan: EditText
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -26,11 +26,16 @@ class HistoryFragment : Fragment() {
         val binding = inflater.inflate(R.layout.fragment_history, container, false)
 
         etProductName = binding.findViewById(R.id.et_product_name)
-        etSugarContent = binding.findViewById(R.id.et_sugar_content)
+        etKandungan = binding.findViewById(R.id.et_kandungan)
 
         val btnSaveProduct = binding.findViewById<View>(R.id.btn_save_product)
         btnSaveProduct.setOnClickListener {
             saveProduct()
+        }
+
+        // Ambil hasil scan dari argumen (jika ada)
+        arguments?.getString("scanResult")?.let { scanResult ->
+            etKandungan.setText(scanResult)
         }
 
         return binding
@@ -38,7 +43,7 @@ class HistoryFragment : Fragment() {
 
     private fun saveProduct() {
         val productName = etProductName.text.toString().trim()
-        val sugarContentText = etSugarContent.text.toString().trim()
+        val sugarContentText = etKandungan.text.toString().trim()
 
         if (productName.isEmpty() || sugarContentText.isEmpty()) {
             Toast.makeText(requireContext(), "Harap lengkapi semua kolom", Toast.LENGTH_SHORT).show()
@@ -57,6 +62,7 @@ class HistoryFragment : Fragment() {
         // Buat objek Product
         val product = Product(namaProduct = productName, valueProduct = sugarContent, createdAt = createdAt)
 
+        // Ambil token dari shared preferences
         val sharedPreferences = requireActivity().getSharedPreferences("auth", Context.MODE_PRIVATE)
         val token = sharedPreferences.getString("token", "") ?: ""
 
@@ -67,7 +73,7 @@ class HistoryFragment : Fragment() {
                     Toast.makeText(requireContext(), "Product saved successfully", Toast.LENGTH_SHORT).show()
                     // Reset input setelah berhasil
                     etProductName.text.clear()
-                    etSugarContent.text.clear()
+                    etKandungan.text.clear()
                 } else {
                     Toast.makeText(requireContext(), "Failed to save product: ${response.message()}", Toast.LENGTH_SHORT).show()
                 }
@@ -78,5 +84,4 @@ class HistoryFragment : Fragment() {
             }
         })
     }
-
 }
