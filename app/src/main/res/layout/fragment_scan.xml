@@ -1,7 +1,8 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="?android:colorBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -41,7 +42,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:backgroundTint="@color/green"
-                android:text="Open Gallery" />
+                android:text="Open Gallery"
+                android:textColor="?android:textColorPrimary"/>
 
             <Button
                 android:id="@+id/btn_picture_debug"
@@ -50,7 +52,8 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:backgroundTint="@color/green"
-                android:text="Take Photo" />
+                android:text="Take Photo"
+                android:textColor="?android:textColorPrimary"/>
         </LinearLayout>
 
         <LinearLayout
@@ -66,7 +69,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Scan Photo"
-                android:visibility="gone" />
+                android:visibility="gone"
+                android:textColor="?android:textColorPrimary"/>
         </LinearLayout>
 
         <TextView
@@ -75,7 +79,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Hasil Scan:"
-            android:textColor="@android:color/black"
+            android:textColor="?android:textColorPrimary"
             android:textSize="16sp"
             android:visibility="gone" />
 
@@ -85,7 +89,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Add to History"
-            android:visibility="gone" />
+            android:visibility="gone"
+            android:textColor="?android:textColorPrimary"/>
 
         <ProgressBar
             android:id="@+id/progress_bar"
