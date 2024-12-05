@@ -109,24 +109,29 @@ def clean_text(ocr_text):
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
     patterns = {
-        'Serving Size': r'(Serving Size|Takaran Saji)[:\-\s]*([0-9]+g)',
-        'Total Fat': r'(Total Fat|Lemak total)[:\-\s]*([0-9]+g)',
-        'Saturated Fat': r'(Saturated Fat|Lemak jenuh)[:\-\s]*([0-9]+g)',
-        'Cholesterol': r'(Cholesterol)[:\-\s]*([0-9]+mg)',
-        'Sodium': r'(Sodium|Garam)[:\-\s]*([0-9]+mg)',
-        'Protein': r'(Protein)[:\-\s]*([0-9]+g)',
-        'Calories': r'Calories[:\-\s]*([0-9]+)',
-        'Sugars': r'(Total Sugars|Sugars|Sugar|Gula)[:\-\s]*([0-9]+g)',  # Menambahkan Total Sugars dan variasi lainnya
+        'Serving Size': r'(Serving\s*Size|Takaran\s*Saji)[:\-\s]*(\d+g)',
+        'Total Fat': r'(Total\s*Fat|Lemak\s*total)[:\-\s]*(\d+g)',
+        'Saturated Fat': r'(Saturated\s*Fat|Lemak\s*jenuh)[:\-\s]*(\d+g)',
+        'Cholesterol': r'(Cholesterol)[:\-\s]*(\d+mg)',
+        'Sodium': r'(Sodium|Garam)[:\-\s]*(\d+mg)',
+        'Protein': r'(Protein)[:\-\s]*(\d+g)',
+        'Calories': r'Calories[:\-\s]*(\d+)',
+        'Sugars': r'(Total\s*Sugars|Sugars|Sugar|Gula)[:\-\s]*(\d+g)',
     }
 
     for key, pattern in patterns.items():
-        match = re.search(pattern, extracted_text, re.IGNORECASE)
-        if match:
-            nutrition_data[key] = match.group(2)
+        try:
+            match = re.search(pattern, extracted_text, re.IGNORECASE)
+            if match:
+                nutrition_data[key] = match.group(2)
+                logging.info(f"Match found for {key}: {match.group(2)}")
+            else:
+                logging.warning(f"No match found for {key} using pattern {pattern}")
+        except Exception as e:
+            logging.error(f"Error processing key {key}: {str(e)}")
 
-    # Debugging tambahan untuk mencetak hasil parsing
-    logging.info("Informasi nutrisi yang terdeteksi: %s", nutrition_data)
     return nutrition_data
+
 
 
 # Fungsi utama untuk memproses gambar dan mengembalikan informasi nutrisi
