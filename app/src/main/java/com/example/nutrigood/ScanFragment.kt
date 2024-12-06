@@ -183,8 +183,6 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
 
-
-
                 // Baca file yang dikompresi dan ubah ke base64
                 val fis = FileInputStream(file)
                 val bytes = fis.readBytes()

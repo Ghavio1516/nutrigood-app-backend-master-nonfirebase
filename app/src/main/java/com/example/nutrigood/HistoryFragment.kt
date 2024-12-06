@@ -35,7 +35,12 @@ class HistoryFragment : Fragment() {
 
         // Ambil hasil scan dari argumen (jika ada)
         arguments?.getString("scanResult")?.let { scanResult ->
-            etKandungan.setText(scanResult)
+            val sugarValue = extractSugarValue(scanResult)
+            if (sugarValue != null) {
+                etKandungan.setText(sugarValue.toString())
+            } else {
+                Toast.makeText(requireContext(), "Tidak ditemukan kandungan gula dalam hasil scan", Toast.LENGTH_SHORT).show()
+            }
         }
 
         return binding
@@ -84,4 +89,26 @@ class HistoryFragment : Fragment() {
             }
         })
     }
-}
+
+    // Fungsi untuk mengekstrak kandungan gula dari hasil scan
+    private fun extractSugarValue(input: String): Int? {
+        // Daftar pola regex untuk mencocokkan berbagai format kandungan gula
+        val regexList = listOf(
+            "(Total\\s*Sugars|Sugars|Added\\s*Sugars|Sugar|Gula)[:\\-\\s]*(\\d+)\\s*(g|mg|9)?", // Pola 1: Teks gula diikuti angka
+            "(\\d+)\\s*(g|mg|9)?[:\\-\\s]*(Total\\s*Sugars|Sugars|Added\\s*Sugars|Sugar|Gula)"  // Pola 2: Angka diikuti teks gula
+        )
+
+        for (regex in regexList) {
+            val pattern = regex.toRegex(RegexOption.IGNORE_CASE) // Abaikan case
+            val matchResult = pattern.find(input)
+            if (matchResult != null) {
+                // Coba konversi angka yang ditemukan menjadi integer
+                val numericValue = matchResult.groups[2]?.value?.toIntOrNull()
+                if (numericValue != null) {
+                    return numericValue
+                }
+            }
+        }
+        return null // Jika tidak ditemukan angka yang valid
+    }
+    }
