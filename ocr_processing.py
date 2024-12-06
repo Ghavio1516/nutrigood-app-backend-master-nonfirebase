@@ -121,7 +121,7 @@ def parse_nutrition_info(extracted_text):
         'Sodium': r'(Sodium|Garam)[:\-\s]*(\d+mg)',  # Menangkap nilai mg
         'Protein': r'(Protein)[:\-\s]*(\d+g)',  # Menangkap nilai g
         'Calories': r'Calories[:\-\s]*(\d+)',  # Menangkap Calories tanpa satuan
-        'Sugars': r'(Total\s*Sugars|Sugars|Added\s*Sugars|Sugar|Gula)[:\-\s]*(\d+\s*g|\d+\s*mg)',  # Menambahkan variasi satuan dan fleksibilitas
+        'Sugars': r'(Total\s*Sugars|Sugars|Added\s*Sugars|Sugar|Gula)[:\-\s]*(\d+\s*g|\d+\s*mg|\d+\s*%|\d+\s*9)',  # Menambahkan variasi satuan dan fleksibilitas
     }
 
     for key, pattern in patterns.items():
