@@ -1,5 +1,5 @@
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
-from transformers import TrOCRProcessor, TrOCRForConditionalGeneration
 from PIL import Image
 import cv2
 import numpy as np
