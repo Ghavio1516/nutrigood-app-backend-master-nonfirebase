@@ -122,7 +122,7 @@ def parse_nutrition_info(extracted_text):
         'Sodium': r'(Sodium|Garam)[:\-\s]*(\d+mg)',
         'Protein': r'(Protein)[:\-\s]*(\d+g)',
         'Calories': r'Calories[:\-\s]*(\d+)',
-        'Sugars': r'(Total\s*Sugars|Sugars|Sugar|Gula)[:\-\s]*\d+g'
+        'Sugars': r'(Total\s*Sugars|Sugars|Added\s*Sugars|Sugar|Gula)[:\-\s]*\d+g'
     }
 
     for key, pattern in patterns.items():
