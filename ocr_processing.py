@@ -1,7 +1,8 @@
-import pytesseract
+import torch
+from transformers import TrOCRProcessor, TrOCRForConditionalGeneration
+from PIL import Image
 import cv2
 import numpy as np
-import tensorflow as tf
 import re
 import json
 import os
@@ -13,14 +14,11 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 # Konfigurasi logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Konfigurasi path Tesseract di Ubuntu
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
-
-# Load the custom trained model
+# Load TrOCR Model dan Processor
 def load_model():
-    model_path = 'my_model_best_model.h5'
-    model = tf.keras.models.load_model(model_path)
-    return model
+    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
+    model = TrOCRForConditionalGeneration.from_pretrained("microsoft/trocr-base-printed")
+    return processor, model
 
 # Mengonversi gambar menjadi grayscale
 def convert_2_gray(image):
@@ -73,21 +71,19 @@ def preprocess_image(image):
     return binary
 
 # Ekstraksi teks dari blok
-def extract_text_from_block(image):
+def extract_text_from_block(processor, model, image):
     processed_image = preprocess_image(image)
-    text_blocks = find_text_blocks(processed_image)
     
-    if not text_blocks:
-        return "No text found."
+    # Menggunakan TrOCR untuk OCR
+    # Menggunakan PIL image untuk TrOCR
+    pil_image = Image.fromarray(processed_image)
 
-    full_text = ""
-    for block in text_blocks:
-        x, y, w, h = block
-        block_img = image[y:y+h, x:x+w]
-        text = pytesseract.image_to_string(block_img, config='--psm 6')  # Mode untuk blok teks
-        full_text += text.strip() + "\n"
+    # Mengonversi gambar menjadi teks menggunakan TrOCR
+    inputs = processor(pil_image, return_tensors="pt")
+    generated_ids = model.generate(inputs["pixel_values"])
+    text = processor.decode(generated_ids[0], skip_special_tokens=True)
 
-    return full_text.strip()
+    return text.strip()
 
 # Fungsi untuk membersihkan teks hasil OCR
 def clean_text(ocr_text):
@@ -103,8 +99,44 @@ def clean_text(ocr_text):
         'natrium': 'Sodium',
         'Kalori': 'Calories',
         'Gula': 'Sugars',
-        'TotalSugar': 'Total Sugars',  # Variasi lainnya
-        'SugarsTotal': 'Total Sugars',  # Menambahkan variasi lain jika diperlukan
+        'TotalSugar': 'Total Sugars',
+
+        # Variasi gula
+        'Sugars': 'Sugars',
+        'Sugar': 'Sugars',
+        'Gula': 'Sugars',
+        'Sucrose': 'Sugars',
+        'Fructose': 'Sugars',
+        'Glucose': 'Sugars',
+        'Lactose': 'Sugars',
+        'Maltose': 'Sugars',
+        'High fructose corn syrup': 'Sugars',
+        'Gula Pasir': 'Sugars',
+        'Gula Kelapa': 'Sugars',
+        'Gula Aren': 'Sugars',
+        'Gula Merah': 'Sugars',
+        'Gola/Sugar': 'Sugars',
+        # Tambahan variasi gula
+        'Corn Syrup': 'Sugars',
+        'Brown Sugar': 'Sugars',
+        'Powdered Sugar': 'Sugars',
+        'Invert Sugar': 'Sugars',
+        'Dextrose': 'Sugars',
+        'Honey': 'Sugars',
+        'Molasses': 'Sugars',
+        'Agave': 'Sugars',
+        'Agave Syrup': 'Sugars',
+        'Syrup': 'Sugars',
+        'Barley Malt': 'Sugars',
+        'Cane Sugar': 'Sugars',
+        'Coconut Sugar': 'Sugars',
+        'Palm Sugar': 'Sugars',
+        'Maple Syrup': 'Sugars',
+        'Rice Syrup': 'Sugars',
+        'Muscovado': 'Sugars',
+        'Caramel': 'Sugars',
+        'Turbinado Sugar': 'Sugars',
+        'Raw Sugar': 'Sugars'  # Menambahkan variasi lain
     }
     for old, new in replacements.items():
         clean_text = clean_text.replace(old, new)
@@ -121,7 +153,7 @@ def parse_nutrition_info(extracted_text):
         'Sodium': r'(Sodium|Garam)[:\-\s]*(\d+mg)',  # Menangkap nilai mg
         'Protein': r'(Protein)[:\-\s]*(\d+g)',  # Menangkap nilai g
         'Calories': r'Calories[:\-\s]*(\d+)',  # Menangkap Calories tanpa satuan
-        'Sugars': r'(Total\s*Sugars|Sugars|Added\s*Sugars|Sugar|Gula)[:\-\s]*(\d+\s*g|\d+\s*mg|\d+\s*9|\d+\s*g\s*Added\s*Sugars)',  # Menambahkan fleksibilitas untuk "10g Added Sugar"
+        'Sugars': r'(Total\s*Sugars|Sugars|Added\s*Sugars|Sugar|Gula)[:\-\s]*(\d+\s*g|\d+\s*mg|\d+\s*9)',  # Menambahkan fleksibilitas untuk "10g Added Sugar"
     }
 
     for key, pattern in patterns.items():
@@ -152,8 +184,11 @@ if __name__ == "__main__":
         
         logging.info("Memproses gambar: %s", image_path)
 
-        # Ekstraksi teks dari gambar
-        story_text = extract_text_from_block(image)
+        # Load the TrOCR model and processor
+        processor, model = load_model()
+
+        # Ekstraksi teks dari gambar menggunakan TrOCR
+        story_text = extract_text_from_block(processor, model, image)
         logging.info("Teks hasil OCR:\n%s", story_text)
 
         # Membersihkan teks hasil OCR
@@ -184,14 +219,6 @@ if __name__ == "__main__":
             }
             print(json.dumps(response, indent=4))
             sys.exit(1)
-
-
-        # # Output dalam format JSON
-        # output_data = {
-        #     "Extracted Text": cleaned_text,
-        #     "Nutrition Information": nutrition_info
-        # }
-        # print("Output:", json.dumps(output_data, indent=4))
 
     except Exception as e:
         logging.error("Error: %s", str(e))
