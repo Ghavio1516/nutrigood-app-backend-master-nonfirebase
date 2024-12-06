@@ -103,26 +103,25 @@ def clean_text(ocr_text):
         'natrium': 'Sodium',
         'Kalori': 'Calories',
         'Gula': 'Sugars',
-        'TotalSugar': 'Total Sugars',
-        'TotalSugar': 'Total Sugars',  # Menambahkan variasi lain
+        'TotalSugar': 'Total Sugars',  # Variasi lainnya
+        'SugarsTotal': 'Total Sugars',  # Menambahkan variasi lain jika diperlukan
     }
     for old, new in replacements.items():
         clean_text = clean_text.replace(old, new)
     return clean_text.strip()
 
-
 # Fungsi untuk parsing informasi nutrisi
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
     patterns = {
-        'Serving Size': r'(Serving\s*Size|Takaran\s*Saji)[:\-\s]*(\d+g)',
-        'Total Fat': r'(Total\s*Fat|Lemak\s*total)[:\-\s]*(\d+g)',
-        'Saturated Fat': r'(Saturated\s*Fat|Lemak\s*jenuh)[:\-\s]*(\d+g)',
-        'Cholesterol': r'(Cholesterol)[:\-\s]*(\d+mg)',
-        'Sodium': r'(Sodium|Garam)[:\-\s]*(\d+mg)',
-        'Protein': r'(Protein)[:\-\s]*(\d+g)',
-        'Calories': r'Calories[:\-\s]*(\d+)',
-        'Sugars': r'(Total\s*Sugars|Sugars|Added\s*Sugars|Sugar|Gula)[:\-\s]*\d+g'
+        'Serving Size': r'(Serving\s*Size|Takaran\s*Saji)[:\-\s]*(\d+g|\d+ml|\d+\s*(serving|portion))',  # Membuat lebih fleksibel
+        'Total Fat': r'(Total\s*Fat|Lemak\s*total)[:\-\s]*(\d+g|\d+ml)',  # Menambahkan fleksibilitas pada satuan
+        'Saturated Fat': r'(Saturated\s*Fat|Lemak\s*jenuh)[:\-\s]*(\d+g|\d+ml)',  # Menambahkan fleksibilitas pada satuan
+        'Cholesterol': r'(Cholesterol)[:\-\s]*(\d+mg)',  # Menangkap nilai mg
+        'Sodium': r'(Sodium|Garam)[:\-\s]*(\d+mg)',  # Menangkap nilai mg
+        'Protein': r'(Protein)[:\-\s]*(\d+g)',  # Menangkap nilai g
+        'Calories': r'Calories[:\-\s]*(\d+)',  # Menangkap Calories tanpa satuan
+        'Sugars': r'(Total\s*Sugars|Sugars|Added\s*Sugars|Sugar|Gula)[:\-\s]*(\d+\s*g|\d+\s*mg)',  # Menambahkan variasi satuan dan fleksibilitas
     }
 
     for key, pattern in patterns.items():
@@ -136,10 +135,7 @@ def parse_nutrition_info(extracted_text):
         except Exception as e:
             logging.error(f"Error processing key {key}: {str(e)}")
 
-
     return nutrition_data
-
-
 
 # Fungsi utama untuk memproses gambar dan mengembalikan informasi nutrisi
 if __name__ == "__main__":
