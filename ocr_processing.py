@@ -1,6 +1,6 @@
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
+from transformers import TrOCRProcessor, TrOCRForConditionalGeneration
 from PIL import Image
+import torch
 import cv2
 import numpy as np
 import re
@@ -99,44 +99,8 @@ def clean_text(ocr_text):
         'natrium': 'Sodium',
         'Kalori': 'Calories',
         'Gula': 'Sugars',
-        'TotalSugar': 'Total Sugars',
-
-        # Variasi gula
-        'Sugars': 'Sugars',
-        'Sugar': 'Sugars',
-        'Gula': 'Sugars',
-        'Sucrose': 'Sugars',
-        'Fructose': 'Sugars',
-        'Glucose': 'Sugars',
-        'Lactose': 'Sugars',
-        'Maltose': 'Sugars',
-        'High fructose corn syrup': 'Sugars',
-        'Gula Pasir': 'Sugars',
-        'Gula Kelapa': 'Sugars',
-        'Gula Aren': 'Sugars',
-        'Gula Merah': 'Sugars',
-        'Gola/Sugar': 'Sugars',
-        # Tambahan variasi gula
-        'Corn Syrup': 'Sugars',
-        'Brown Sugar': 'Sugars',
-        'Powdered Sugar': 'Sugars',
-        'Invert Sugar': 'Sugars',
-        'Dextrose': 'Sugars',
-        'Honey': 'Sugars',
-        'Molasses': 'Sugars',
-        'Agave': 'Sugars',
-        'Agave Syrup': 'Sugars',
-        'Syrup': 'Sugars',
-        'Barley Malt': 'Sugars',
-        'Cane Sugar': 'Sugars',
-        'Coconut Sugar': 'Sugars',
-        'Palm Sugar': 'Sugars',
-        'Maple Syrup': 'Sugars',
-        'Rice Syrup': 'Sugars',
-        'Muscovado': 'Sugars',
-        'Caramel': 'Sugars',
-        'Turbinado Sugar': 'Sugars',
-        'Raw Sugar': 'Sugars'  # Menambahkan variasi lain
+        'TotalSugar': 'Total Sugars',  # Variasi lainnya
+        'SugarsTotal': 'Total Sugars',  # Menambahkan variasi lain jika diperlukan
     }
     for old, new in replacements.items():
         clean_text = clean_text.replace(old, new)
