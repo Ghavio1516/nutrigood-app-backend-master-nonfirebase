@@ -107,7 +107,6 @@ def clean_text(ocr_text):
 
         # Variasi gula
         'Sugars': 'Sugars',
-        'Sugar': 'Sugars',
         'Gula': 'Sugars',
         'Sucrose': 'Sugars',
         'Fructose': 'Sugars',
