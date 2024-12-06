@@ -14,6 +14,7 @@ import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -305,6 +306,36 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         transaction.replace(R.id.fragment_container, historyFragment)
         transaction.addToBackStack(null)
         transaction.commit()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == GALLERY_REQUEST_CODE && resultCode == AppCompatActivity.RESULT_OK) {
+            val selectedImageUri: Uri? = data?.data
+            if (selectedImageUri != null) {
+                val photoFile = File(requireContext().cacheDir, "selected_photo.jpg")
+                val inputStream = requireContext().contentResolver.openInputStream(selectedImageUri)
+                val outputStream = FileOutputStream(photoFile)
+
+                inputStream?.use { input ->
+                    outputStream.use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                // Tampilkan foto dengan rotasi yang benar
+                val options = BitmapFactory.Options().apply { inSampleSize = 4 }
+                val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath, options)
+                val rotatedBitmap = fixImageRotation(photoFile.absolutePath, bitmap)
+                imageView.setImageBitmap(rotatedBitmap)
+
+                capturedPhotoFile = photoFile // Simpan file foto untuk keperluan lebih lanjut
+                showPhotoView() // Tampilkan photoView
+                scanButton.visibility = View.VISIBLE // Tampilkan tombol scan
+            } else {
+                Toast.makeText(requireContext(), "Failed to select image", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     override fun onDestroyView() {
