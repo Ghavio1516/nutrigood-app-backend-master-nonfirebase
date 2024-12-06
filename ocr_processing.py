@@ -1,8 +1,7 @@
-from transformers import TrOCRProcessor, TrOCRForConditionalGeneration
-from PIL import Image
-import torch
+import pytesseract
 import cv2
 import numpy as np
+import tensorflow as tf
 import re
 import json
 import os
@@ -14,11 +13,14 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 # Konfigurasi logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Load TrOCR Model dan Processor
+# Konfigurasi path Tesseract di Ubuntu
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+
+# Load the custom trained model
 def load_model():
-    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
-    model = TrOCRForConditionalGeneration.from_pretrained("microsoft/trocr-base-printed")
-    return processor, model
+    model_path = 'my_model_best_model.h5'
+    model = tf.keras.models.load_model(model_path)
+    return model
 
 # Mengonversi gambar menjadi grayscale
 def convert_2_gray(image):
@@ -71,19 +73,21 @@ def preprocess_image(image):
     return binary
 
 # Ekstraksi teks dari blok
-def extract_text_from_block(processor, model, image):
+def extract_text_from_block(image):
     processed_image = preprocess_image(image)
+    text_blocks = find_text_blocks(processed_image)
     
-    # Menggunakan TrOCR untuk OCR
-    # Menggunakan PIL image untuk TrOCR
-    pil_image = Image.fromarray(processed_image)
+    if not text_blocks:
+        return "No text found."
 
-    # Mengonversi gambar menjadi teks menggunakan TrOCR
-    inputs = processor(pil_image, return_tensors="pt")
-    generated_ids = model.generate(inputs["pixel_values"])
-    text = processor.decode(generated_ids[0], skip_special_tokens=True)
+    full_text = ""
+    for block in text_blocks:
+        x, y, w, h = block
+        block_img = image[y:y+h, x:x+w]
+        text = pytesseract.image_to_string(block_img, config='--psm 6')  # Mode untuk blok teks
+        full_text += text.strip() + "\n"
 
-    return text.strip()
+    return full_text.strip()
 
 # Fungsi untuk membersihkan teks hasil OCR
 def clean_text(ocr_text):
@@ -99,8 +103,44 @@ def clean_text(ocr_text):
         'natrium': 'Sodium',
         'Kalori': 'Calories',
         'Gula': 'Sugars',
-        'TotalSugar': 'Total Sugars',  # Variasi lainnya
-        'SugarsTotal': 'Total Sugars',  # Menambahkan variasi lain jika diperlukan
+        'TotalSugar': 'Total Sugars',
+
+        # Variasi gula
+        'Sugars': 'Sugars',
+        'Sugar': 'Sugars',
+        'Gula': 'Sugars',
+        'Sucrose': 'Sugars',
+        'Fructose': 'Sugars',
+        'Glucose': 'Sugars',
+        'Lactose': 'Sugars',
+        'Maltose': 'Sugars',
+        'High fructose corn syrup': 'Sugars',
+        'Gula Pasir': 'Sugars',
+        'Gula Kelapa': 'Sugars',
+        'Gula Aren': 'Sugars',
+        'Gula Merah': 'Sugars',
+        'Gola/Sugar': 'Sugars',
+        # Tambahan variasi gula
+        'Corn Syrup': 'Sugars',
+        'Brown Sugar': 'Sugars',
+        'Powdered Sugar': 'Sugars',
+        'Invert Sugar': 'Sugars',
+        'Dextrose': 'Sugars',
+        'Honey': 'Sugars',
+        'Molasses': 'Sugars',
+        'Agave': 'Sugars',
+        'Agave Syrup': 'Sugars',
+        'Syrup': 'Sugars',
+        'Barley Malt': 'Sugars',
+        'Cane Sugar': 'Sugars',
+        'Coconut Sugar': 'Sugars',
+        'Palm Sugar': 'Sugars',
+        'Maple Syrup': 'Sugars',
+        'Rice Syrup': 'Sugars',
+        'Muscovado': 'Sugars',
+        'Caramel': 'Sugars',
+        'Turbinado Sugar': 'Sugars',
+        'Raw Sugar': 'Sugars'  # Menambahkan variasi lain
     }
     for old, new in replacements.items():
         clean_text = clean_text.replace(old, new)
@@ -148,11 +188,8 @@ if __name__ == "__main__":
         
         logging.info("Memproses gambar: %s", image_path)
 
-        # Load the TrOCR model and processor
-        processor, model = load_model()
-
-        # Ekstraksi teks dari gambar menggunakan TrOCR
-        story_text = extract_text_from_block(processor, model, image)
+        # Ekstraksi teks dari gambar
+        story_text = extract_text_from_block(image)
         logging.info("Teks hasil OCR:\n%s", story_text)
 
         # Membersihkan teks hasil OCR
@@ -183,6 +220,14 @@ if __name__ == "__main__":
             }
             print(json.dumps(response, indent=4))
             sys.exit(1)
+
+
+        # # Output dalam format JSON
+        # output_data = {
+        #     "Extracted Text": cleaned_text,
+        #     "Nutrition Information": nutrition_info
+        # }
+        # print("Output:", json.dumps(output_data, indent=4))
 
     except Exception as e:
         logging.error("Error: %s", str(e))
