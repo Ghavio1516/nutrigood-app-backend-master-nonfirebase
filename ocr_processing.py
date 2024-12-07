@@ -149,7 +149,7 @@ def clean_text(ocr_text):
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
     patterns = {
-        'Serving Size': r'(Serving\s*Size|Takaran\s*Saji)[:\-\s]*(\d+g|\d+ml|\d+\s*(serving|portion))',  # Membuat lebih fleksibel
+        'Serving Size': r'(?i)(?:\b(?:\d+)\s)?(?:sajian\sper\skemasan|servings\sper\scontainer)[:\s]*(\d+)',
         'Total Fat': r'(Total\s*Fat|Lemak\s*total)[:\-\s]*(\d+g|\d+ml)',  # Menambahkan fleksibilitas pada satuan
         'Saturated Fat': r'(Saturated\s*Fat|Lemak\s*jenuh)[:\-\s]*(\d+g|\d+ml)',  # Menambahkan fleksibilitas pada satuan
         'Cholesterol': r'(Cholesterol)[:\-\s]*(\d+mg)',  # Menangkap nilai mg
