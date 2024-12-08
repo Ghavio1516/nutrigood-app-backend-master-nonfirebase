@@ -28,7 +28,7 @@
         app:layout_constraintTop_toBottomOf="@id/logo"
         android:layout_marginBottom="8dp" />
 
-    <EditText
+    <com.example.nutrigood.customview.EmailEditText
         android:id="@+id/email"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

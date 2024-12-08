@@ -50,13 +50,11 @@ class Login : AppCompatActivity() {
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
 
-            Log.e("Login", "Login Button Clicked")
-
-            // Validasi input
             if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Email and password are required", Toast.LENGTH_SHORT).show()
+            } else if (etEmail.error != null) {
+                Toast.makeText(this, "Email tidak valid", Toast.LENGTH_SHORT).show()
             } else {
-                // Membuat objek LoginRequest dan mengirimkan ke server
                 val loginRequest = LoginRequest(email, password)
                 loginUser(loginRequest)
             }

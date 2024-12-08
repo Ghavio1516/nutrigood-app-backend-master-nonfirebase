@@ -30,12 +30,13 @@
             android:textColor="@color/white"
             android:layout_marginBottom="8dp" />
 
-        <EditText
+        <com.example.nutrigood.customview.EmailEditText
             android:id="@+id/et_email"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:textSize="16sp"
             android:hint="Enter your email"
+            android:textColor="@color/gray"
             android:inputType="textEmailAddress"
             android:background="@drawable/rounded_edit_text"
             android:padding="16dp"
@@ -56,6 +57,7 @@
             android:layout_height="48dp"
             android:textSize="16sp"
             android:hint="Enter your username"
+            android:textColor="@color/gray"
             android:inputType="text"
             android:background="@drawable/rounded_edit_text"
             android:padding="16dp"
@@ -76,6 +78,7 @@
             android:layout_height="48dp"
             android:textSize="16sp"
             android:hint="Enter your age"
+            android:textColor="@color/gray"
             android:inputType="number"
             android:background="@drawable/rounded_edit_text"
             android:padding="16dp"
@@ -95,6 +98,7 @@
             android:layout_height="48dp"
             android:textSize="16sp"
             android:hint="Enter your password"
+            android:textColor="@color/gray"
             android:inputType="textPassword"
             android:background="@drawable/rounded_edit_text"
             android:padding="16dp"
@@ -116,6 +120,7 @@
             android:layout_height="48dp"
             android:textSize="16sp"
             android:hint="Re-enter your password"
+            android:textColor="@color/gray"
             android:inputType="textPassword"
             android:background="@drawable/rounded_edit_text"
             android:padding="16dp"

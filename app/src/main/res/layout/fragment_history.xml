@@ -30,5 +30,7 @@
         android:id="@+id/btn_save_product"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Simpan" />
+        android:text="Simpan"
+        android:textSize="16sp"
+        android:textColor="@color/white"/>
 </LinearLayout>
