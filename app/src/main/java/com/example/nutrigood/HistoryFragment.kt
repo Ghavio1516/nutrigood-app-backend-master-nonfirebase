@@ -18,6 +18,7 @@ class HistoryFragment : Fragment() {
 
     private lateinit var etProductName: EditText
     private lateinit var etKandungan: EditText
+    private lateinit var etBanyakProduk: EditText
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -27,6 +28,7 @@ class HistoryFragment : Fragment() {
 
         etProductName = binding.findViewById(R.id.et_product_name)
         etKandungan = binding.findViewById(R.id.et_kandungan)
+        etBanyakProduk = binding.findViewById(R.id.et_banyak_produk)
 
         val btnSaveProduct = binding.findViewById<View>(R.id.btn_save_product)
         btnSaveProduct.setOnClickListener {
@@ -49,6 +51,7 @@ class HistoryFragment : Fragment() {
     private fun saveProduct() {
         val productName = etProductName.text.toString().trim()
         val sugarContentText = etKandungan.text.toString().trim()
+        val productQuantityText = etBanyakProduk.text.toString().trim()
 
         if (productName.isEmpty() || sugarContentText.isEmpty()) {
             Toast.makeText(requireContext(), "Harap lengkapi semua kolom", Toast.LENGTH_SHORT).show()
@@ -56,17 +59,22 @@ class HistoryFragment : Fragment() {
         }
 
         val sugarContent = sugarContentText.toDoubleOrNull()
-        if (sugarContent == null) {
-            Toast.makeText(requireContext(), "Kandungan gula harus berupa angka", Toast.LENGTH_SHORT).show()
+        val productQuantity = productQuantityText.toIntOrNull()
+
+        if (sugarContent == null || productQuantity == null || productQuantity <= 0) {
+            Toast.makeText(requireContext(), "Kandungan gula dan banyak produk harus berupa angka valid", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Ambil waktu sekarang sebagai createdAt
+        // Hitung total gula
+        val totalSugar = sugarContent * productQuantity
+
         val createdAt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
-
-        // Buat objek Product
-        val product = Product(namaProduct = productName, valueProduct = sugarContent, createdAt = createdAt)
-
+        val product = Product(
+            namaProduct = productName,
+            valueProduct = totalSugar,
+            createdAt = createdAt
+        )
         // Ambil token dari shared preferences
         val sharedPreferences = requireActivity().getSharedPreferences("auth", Context.MODE_PRIVATE)
         val token = sharedPreferences.getString("token", "") ?: ""
@@ -79,6 +87,7 @@ class HistoryFragment : Fragment() {
                     // Reset input setelah berhasil
                     etProductName.text.clear()
                     etKandungan.text.clear()
+                    etBanyakProduk.text.clear()
                 } else {
                     Toast.makeText(requireContext(), "Failed to save product: ${response.message()}", Toast.LENGTH_SHORT).show()
                 }

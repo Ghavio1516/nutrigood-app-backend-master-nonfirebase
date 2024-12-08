@@ -18,6 +18,13 @@
         android:hint="Kandungan "
         android:inputType="numberDecimal" />
 
+    <EditText
+        android:id="@+id/et_banyak_produk"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Banyak Produk"
+        android:inputType="number" />
+
 
     <Button
         android:id="@+id/btn_save_product"
