@@ -298,7 +298,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         const [user] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
         if (!user) throw new Error('User not found');
-
+        console.log("Age:", age, "BB:", bb);
         const { age, bb } = user;
 
         const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, age, bb]);
