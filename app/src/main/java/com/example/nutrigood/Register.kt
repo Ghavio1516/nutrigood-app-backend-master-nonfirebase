@@ -29,6 +29,7 @@ class Register : AppCompatActivity() {
         val etConfirmPassword = findViewById<EditText>(R.id.et_confirm_password)
         val spinnerDiabetes = findViewById<Spinner>(R.id.spinner_diabetes)
         val btnSubmit = findViewById<Button>(R.id.btn_submit)
+        val etBerat = findViewById<EditText> (R.id.et_berat)
 
         // Set data untuk spinner
         val diabetesOptions = arrayOf("Yes", "No")
@@ -49,17 +50,18 @@ class Register : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerDiabetes.adapter = adapter
 
-        // Klik tombol submit
         btnSubmit.setOnClickListener {
             val email = etEmail.text.toString().trim()
             val username = etUsername.text.toString().trim()
             val ageText = etAge.text.toString().trim()
             val password = etPassword.text.toString().trim()
             val confirmPassword = etConfirmPassword.text.toString().trim()
+            val beratText = etBerat.text.toString().trim()
+            val berat = beratText.toIntOrNull() // Konversi ke integer
             val diabetesStatus = spinnerDiabetes.selectedItem.toString()
 
             // Validasi input
-            if (email.isEmpty() || username.isEmpty() || ageText.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            if (email.isEmpty() || username.isEmpty() || ageText.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || beratText.isEmpty()) {
                 Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -71,14 +73,22 @@ class Register : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // Validasi berat badan (harus angka)
+            if (berat == null || berat <= 0) {
+                Toast.makeText(this, "Weight must be a valid positive number", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             if (password != confirmPassword) {
                 Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             // Panggil fungsi untuk register user
-            registerUser(User(email, password, username, age, diabetesStatus))
+            registerUser(User(email, password, username, age, diabetesStatus, berat))
         }
+
+
     }
 
     private fun registerUser(user: User) {

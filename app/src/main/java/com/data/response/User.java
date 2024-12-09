@@ -6,14 +6,16 @@ public class User {
     private String name;
     private int age;
     private String diabetes;
+    private int bb; // Ubah tipe data ke int
 
     // Constructor
-    public User(String email, String password, String name, int age, String diabetes) {
+    public User(String email, String password, String name, int age, String diabetes, int bb) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.age = age;
         this.diabetes = diabetes;
+        this.bb = bb; //
     }
 
     // Getters and Setters
@@ -55,5 +57,13 @@ public class User {
 
     public void setDiabetes(String diabetes) {
         this.diabetes = diabetes;
+    }
+
+    public int getBb() {
+        return bb;
+    }
+
+    public void setBb(int bb) {
+        this.bb = bb;
     }
 }
