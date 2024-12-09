@@ -7,6 +7,9 @@ import tensorflow as tf
 import numpy as np
 from paddleocr import PaddleOCR
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1" 
+
 # Konfigurasi logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -111,8 +114,8 @@ def analyze_with_model(nutrition_info, model_path):
         input_data_normalized = input_data / np.max(input_data, axis=0)
 
         predictions = model.predict(input_data_normalized)
-        kategori_gula = "Tinggi Gula" if predictions[0][0] > 0.5 else "Rendah Gula"
-        rekomendasi = "Kurangi Konsumsi" if predictions[0][1] > 0.5 else "Aman Dikonsumsi"
+        kategori_gula = "Tinggi Gula" if predictions[0][0].item() > 0.5 else "Rendah Gula"
+        rekomendasi = "Kurangi Konsumsi" if predictions[0][1].item() > 0.5 else "Aman Dikonsumsi"
 
         return {
             "Kategori Gula": kategori_gula,
@@ -150,10 +153,10 @@ if __name__ == "__main__":
                 "nutrition_info": {}
             }
 
-        print(json.dumps(response, indent=4))
+        print(json.dumps(response, indent=4), flush=True)
 
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}}
-        print(json.dumps(response, indent=4))
+        print(json.dumps(response, indent=4), flush=True)
         sys.exit(1)

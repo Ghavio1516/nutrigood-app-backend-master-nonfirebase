@@ -283,23 +283,22 @@ const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
 
-    if (!base64Image) {
+    if (!base64Image || !base64Image.startsWith('data:image/')) {
         return h.response({
             status: 'fail',
-            message: 'Missing base64Image',
+            message: 'Invalid or missing base64Image',
         }).code(400);
     }
 
+    const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
+    const modelPath = path.join(__dirname, '../model/analisis-nutrisi.h5');
+
     try {
-        // Konversi gambar dari base64 ke file fisik
+        // Simpan gambar sementara
         const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
-        const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
 
-        // Path ke model TensorFlow
-        const modelPath = path.join(__dirname, '../model/analisis-nutrisi.h5');
-
-        // Jalankan skrip Python untuk OCR dan analisis
+        // Jalankan skrip Python
         const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, modelPath]);
 
         let scriptOutput = '';
@@ -321,10 +320,14 @@ const uploadPhotoHandler = async (request, h) => {
             });
         });
 
-        // Parse hasil JSON dari Python script
-        const output = JSON.parse(scriptOutput.trim());
+        // Filter JSON output
+        const output = scriptOutput.trim();
+        if (!output.startsWith('{') || !output.endsWith('}')) {
+            throw new Error('Invalid JSON output from Python script');
+        }
 
-        if (output.message === 'Error') {
+        const parsedOutput = JSON.parse(output);
+        if (parsedOutput.message === 'Error') {
             return h.response({
                 status: 'fail',
                 message: 'Failed to analyze nutrition data',
@@ -333,7 +336,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         return h.response({
             status: 'success',
-            data: output,
+            data: parsedOutput,
         }).code(200);
     } catch (error) {
         console.error(`Error in uploadPhotoHandler: ${error.message}`);
@@ -341,8 +344,14 @@ const uploadPhotoHandler = async (request, h) => {
             status: 'fail',
             message: `Failed to process: ${error.message}`,
         }).code(500);
+    } finally {
+        // Hapus file temporer
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
     }
 };
+
 
 
 // Ekspor semua handler
