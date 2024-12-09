@@ -116,12 +116,24 @@ def parse_nutrition_info(extracted_text):
 
 # Fungsi untuk prediksi model
 def predict_nutrition_info(model, inputs):
-    logging.info(f"Predicting nutrition info with inputs: {inputs}")
     try:
+        # Konversi input ke tensor
+        logging.info(f"Converting inputs to tensor: {inputs}")
         input_tensor = tf.convert_to_tensor([inputs], dtype=tf.float32)
-        prediction = model(input_tensor)
-        prediction = prediction.numpy().tolist()
-        logging.info(f"Prediction result: {prediction}")
+        logging.info("Tensor conversion successful.")
+
+        # Prediksi menggunakan model Keras
+        logging.info("Performing prediction using Keras model.")
+        prediction = model(input_tensor)  # Output bisa berupa Tensor atau NumPy array
+        logging.info(f"Raw prediction output: {prediction}")
+
+        # Konversi prediksi menjadi list
+        if isinstance(prediction, tf.Tensor):
+            prediction = prediction.numpy()  # Konversi Tensor ke NumPy array
+        if isinstance(prediction, np.ndarray):
+            prediction = prediction.tolist()  # Konversi NumPy array ke list
+
+        logging.info(f"Prediction converted to list: {prediction}")
         return prediction
     except Exception as e:
         logging.error(f"Error during prediction: {e}")
