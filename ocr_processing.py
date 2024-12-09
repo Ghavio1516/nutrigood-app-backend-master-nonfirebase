@@ -63,6 +63,7 @@ def extract_text_from_image(image_path):
     return full_text.strip()
 
 # Parsing teks hasil OCR
+# Parsing teks hasil OCR
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
@@ -83,25 +84,31 @@ def parse_nutrition_info(extracted_text):
                 found_value = match.group(2)
 
             if found_value:
-                nutrition_data[key] = found_value.strip()
-                logging.info(f"{key} ditemukan: {nutrition_data[key]}")
+                try:
+                    # Convert numeric values safely
+                    numeric_value = float(re.search(r"[\d.]+", found_value).group())
+                    nutrition_data[key] = numeric_value
+                except (ValueError, AttributeError):
+                    logging.warning(f"Invalid value for {key}: {found_value}, setting to 0.0")
+                    nutrition_data[key] = 0.0
             else:
-                logging.warning(f"Tidak ditemukan nilai untuk {key} meskipun pola cocok.")
+                logging.warning(f"Tidak ditemukan nilai untuk {key}, default ke 0.0.")
+                nutrition_data[key] = 0.0
         else:
-            logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
+            logging.warning(f"Tidak ditemukan data untuk {key}, default ke 0.0.")
+            nutrition_data[key] = 0.0
 
     # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     if "Sajian per kemasan" not in nutrition_data:
-        nutrition_data["Sajian per kemasan"] = 1
+        nutrition_data["Sajian per kemasan"] = 1.0
 
     # Hitung Total Sugar jika tersedia
-    sugar_value = nutrition_data.get("Sugars")
-    if sugar_value:
+    if "Sugars" in nutrition_data and "Sajian per kemasan" in nutrition_data:
         try:
-            sugar_amount = float(re.search(r"[\d.]+", sugar_value).group())
-            nutrition_data["Total Sugar"] = f"{sugar_amount * nutrition_data['Sajian per kemasan']:.2f} g"
-        except AttributeError:
-            logging.error("Tidak dapat menghitung Total Sugar karena nilai gula tidak valid.")
+            nutrition_data["Total Sugar"] = nutrition_data["Sugars"] * nutrition_data["Sajian per kemasan"]
+        except TypeError:
+            logging.error("Error calculating Total Sugar, setting to 0.0")
+            nutrition_data["Total Sugar"] = 0.0
 
     return nutrition_data
 
@@ -136,12 +143,16 @@ if __name__ == "__main__":
 
         # Model input
         model_input = [
-            float(nutrition_info.get("Sajian per kemasan", 1)),
-            float(nutrition_info.get("Sugars", "0").replace("g", "").strip()),
-            float(nutrition_info.get("Total Sugar", "0").replace("g", "").strip()),
+            nutrition_info.get("Sajian per kemasan", 1.0),
+            nutrition_info.get("Sugars", 0.0),
+            nutrition_info.get("Total Sugar", 0.0),
             age,
-            bb
+            bb,
         ]
+
+        # Validasi input sebelum masuk ke model
+        if not all(isinstance(value, (int, float)) for value in model_input):
+            raise ValueError(f"Invalid input for model: {model_input}")
 
         # Predict using model
         prediction = predict_nutrition_info(model, model_input)
