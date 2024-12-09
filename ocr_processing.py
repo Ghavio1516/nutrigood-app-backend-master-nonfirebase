@@ -45,7 +45,7 @@ def extract_text_from_image(image_path):
     full_text = "\n".join([line[1][0] for line in results[0]])
 
     if full_text.strip():
-        logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
+        logging.warning(f"Teks hasil OCR:\n{full_text.strip()}")
     else:
         logging.warning("Teks hasil OCR kosong.")
     
