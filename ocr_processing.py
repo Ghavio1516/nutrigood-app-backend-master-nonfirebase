@@ -20,14 +20,16 @@ ocr = PaddleOCR(
     show_log=False
 )
 
-# Load TensorFlow SavedModel
-MODEL_PATH = "./model/model_Fix_5Variabel.keras"  # Sesuaikan path ke folder SavedModel Anda
+# Path ke model Keras
+MODEL_PATH = "./model/model_Fix_5Variabel.keras"  # Path ke file model Keras
+
+# Load Keras Model
 try:
-    logging.info(f"Loading model from {MODEL_PATH}")
-    model = tf.saved_model.load(MODEL_PATH)
-    logging.info("Model loaded successfully")
+    logging.info(f"Loading Keras model from {MODEL_PATH}")
+    model = tf.keras.models.load_model(MODEL_PATH)
+    logging.info("Keras model loaded successfully")
 except Exception as e:
-    logging.error(f"Failed to load model: {e}")
+    logging.error(f"Failed to load Keras model: {e}")
     sys.exit(1)
 
 # Variasi pencarian teks
@@ -84,7 +86,6 @@ def parse_nutrition_info(extracted_text):
 
             if found_value:
                 try:
-                    # Convert numeric values safely
                     numeric_value = float(re.search(r"[\d.]+", found_value).group())
                     nutrition_data[key] = numeric_value
                 except (ValueError, AttributeError):
@@ -97,11 +98,9 @@ def parse_nutrition_info(extracted_text):
             logging.warning(f"Tidak ditemukan data untuk {key}, default ke 0.0.")
             nutrition_data[key] = 0.0
 
-    # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     if "Sajian per kemasan" not in nutrition_data:
         nutrition_data["Sajian per kemasan"] = 1.0
 
-    # Hitung Total Sugar jika tersedia
     if "Sugars" in nutrition_data and "Sajian per kemasan" in nutrition_data:
         try:
             nutrition_data["Total Sugar"] = nutrition_data["Sugars"] * nutrition_data["Sajian per kemasan"]
@@ -115,8 +114,8 @@ def parse_nutrition_info(extracted_text):
 def predict_nutrition_info(model, inputs):
     try:
         input_tensor = tf.convert_to_tensor([inputs], dtype=tf.float32)
-        prediction = model.signatures["serving_default"](input_tensor)
-        return prediction["output_0"].numpy().tolist()[0]
+        prediction = model.predict(input_tensor)
+        return prediction.tolist()[0]
     except Exception as e:
         logging.error(f"Error during prediction: {e}")
         return None
@@ -125,8 +124,8 @@ def predict_nutrition_info(model, inputs):
 if __name__ == "__main__":
     try:
         image_path = sys.argv[1]
-        age = float(sys.argv[2])  # Age from CLI argument
-        bb = float(sys.argv[3])   # Weight from CLI argument
+        age = float(sys.argv[2])
+        bb = float(sys.argv[3])
 
         image = cv2.imread(image_path)
         if image is None:
@@ -140,7 +139,6 @@ if __name__ == "__main__":
             print(json.dumps(response, indent=4))
             sys.exit(0)
 
-        # Model input
         model_input = [
             nutrition_info.get("Sajian per kemasan", 1.0),
             nutrition_info.get("Sugars", 0.0),
@@ -149,11 +147,9 @@ if __name__ == "__main__":
             bb,
         ]
 
-        # Validasi input sebelum masuk ke model
         if not all(isinstance(value, (int, float)) for value in model_input):
             raise ValueError(f"Invalid input for model: {model_input}")
 
-        # Predict using model
         prediction = predict_nutrition_info(model, model_input)
 
         if prediction is None:
