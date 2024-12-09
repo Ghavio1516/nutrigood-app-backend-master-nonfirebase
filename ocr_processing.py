@@ -116,13 +116,15 @@ def predict_nutrition_info(model, inputs):
         input_tensor = tf.convert_to_tensor([inputs], dtype=tf.float32)
         # Jika model adalah Keras (.keras format)
         if isinstance(model, tf.keras.Model):
-            prediction = model(input_tensor).numpy()
+            prediction = model(input_tensor)  # Keras model langsung mengembalikan output
         else:
-            # Untuk TensorFlow SavedModel
-            prediction = model.signatures["serving_default"](input_tensor)["output_0"].numpy()
+            # Untuk TensorFlow SavedModel (jika digunakan)
+            prediction = model.signatures["serving_default"](input_tensor)["output_0"]
         # Pastikan prediction berbentuk array atau list
-        if isinstance(prediction, (list, np.ndarray)):
-            return prediction[0].tolist() if isinstance(prediction[0], np.ndarray) else prediction[0]
+        if isinstance(prediction, (tf.Tensor, np.ndarray)):
+            return prediction.numpy().tolist() if isinstance(prediction, tf.Tensor) else prediction.tolist()
+        elif isinstance(prediction, list):
+            return prediction
         else:
             raise ValueError(f"Unexpected prediction type: {type(prediction)}")
     except Exception as e:
