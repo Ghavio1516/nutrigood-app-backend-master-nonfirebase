@@ -15,7 +15,7 @@ ocr = PaddleOCR(
 
 # Variasi teks untuk "Sugars" dan "Sajian per Kemasan"
 sugar_variations = [
-    'Gula', 'Sugar', 'Sugars', 'Sucrose', 'Fructose', 'Glucose', 'Lactose',
+    'Gula', 'Sugars', 'Sucrose', 'Fructose', 'Glucose', 'Lactose',
     'Maltose', 'High fructose corn syrup', 'Brown Sugar', 'Powdered Sugar',
     'Invert Sugar', 'Dextrose', 'Honey', 'Molasses', 'Agave', 'Agave Syrup',
     'Syrup', 'Barley Malt', 'Cane Sugar', 'Coconut Sugar', 'Palm Sugar',
