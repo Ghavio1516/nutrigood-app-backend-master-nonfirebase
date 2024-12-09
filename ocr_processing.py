@@ -163,7 +163,7 @@ if __name__ == "__main__":
             age,
             bb,
         ]
-
+        print(json.dumps(model_input, indent=4))
         if not all(isinstance(value, (int, float)) for value in model_input):
             raise ValueError(f"Invalid input for model: {model_input}")
 
