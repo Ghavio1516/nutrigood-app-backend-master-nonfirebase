@@ -73,15 +73,13 @@ def parse_nutrition_info(extracted_text):
             if match:
                 nutrition_data[key] = match.group(2).strip()
                 logging.info(f"Match found for {key}: {match.group(2)}")
-            else:
-                logging.warning(f"No match found for {key} using pattern {pattern}")
         except Exception as e:
             logging.error(f"Error processing key {key}: {str(e)}")
 
     # Gunakan nilai default 1 jika "Sajian per kemasan" tidak ditemukan
     serving_count = nutrition_data.get("Sajian per kemasan")
     if not serving_count:
-        logging.warning("Serving size tidak ditemukan, menggunakan nilai default 1.")
+        logging.info("Serving size tidak ditemukan, menggunakan nilai default 1.")
         serving_count = 1
     else:
         serving_count = int(serving_count)
@@ -94,7 +92,7 @@ def parse_nutrition_info(extracted_text):
             total_sugar = sugar_value * serving_count
             nutrition_data["Total Sugar"] = f"{total_sugar:.2f} g"  # Tambahkan Total Sugar
         else:
-            logging.warning("Gula tidak ditemukan, Total Sugar tidak dapat dihitung.")
+            logging.info("Gula tidak ditemukan, Total Sugar tidak dapat dihitung.")
     except Exception as e:
         logging.error(f"Error calculating Total Sugar: {str(e)}")
 
@@ -109,20 +107,15 @@ if __name__ == "__main__":
         if image is None:
             raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
 
-        logging.info("Memproses gambar: %s", image_path)
-
         # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
-        logging.info("Teks hasil OCR:\n%s", extracted_text)
 
         # Membersihkan teks hasil OCR
         cleaned_text = clean_text(extracted_text)
-        logging.info("Teks setelah dibersihkan:\n%s", cleaned_text)
 
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(cleaned_text)
         if not nutrition_info:  # Jika dictionary kosong
-            logging.warning("Tidak ditemukan informasi nutrisi yang valid dalam teks.")
             response = {
                 "message": "Tidak ditemukan",
                 "nutrition_info": {}
@@ -133,9 +126,14 @@ if __name__ == "__main__":
                 "nutrition_info": nutrition_info
             }
 
-        # Output dalam format JSON
+        # Cetak hanya JSON yang valid
         print(json.dumps(response, indent=4))
 
     except Exception as e:
-        logging.error("Error: %s", str(e))
+        logging.error(f"Error: {str(e)}")
+        response = {
+            "message": "Error",
+            "nutrition_info": {}
+        }
+        print(json.dumps(response, indent=4))
         sys.exit(1)
