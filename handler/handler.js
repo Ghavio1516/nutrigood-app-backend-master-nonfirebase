@@ -126,15 +126,16 @@ const getTodayProductsHandler = async (request, h) => {
 };
 
 // Handler untuk registrasi user
+// Handler untuk registrasi user
 const registerUserHandler = async (request, h) => {
-    const { email, password, name, age, diabetes } = request.payload;
+    const { email, password, name, age, diabetes, bb } = request.payload;
 
     // Validasi input
-    if (!email || !password || !name || typeof age === 'undefined') {
-        console.error('Missing fields:', { email, password, name, age });
+    if (!email || !password || !name || typeof age === 'undefined' || typeof bb === 'undefined') {
+        console.error('Missing fields:', { email, password, name, age, bb });
         return h.response({
             status: 'fail',
-            message: 'All fields (email, password, name, age) are required',
+            message: 'All fields (email, password, name, age, bb) are required',
         }).code(400);
     }
 
@@ -163,14 +164,15 @@ const registerUserHandler = async (request, h) => {
         hashedPassword,
         name,
         age,
+        bb,
         diabetesValue,
         createdAt,
     });
 
     try {
         await data.query(
-            'INSERT INTO users (id, email, password, name, age, diabetes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [userId, email, hashedPassword, name, age, diabetesValue, createdAt]
+            'INSERT INTO users (id, email, password, name, age, bb, diabetes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [userId, email, hashedPassword, name, age, bb, diabetesValue, createdAt]
         );
 
         return h.response({
