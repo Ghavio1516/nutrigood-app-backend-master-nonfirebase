@@ -295,22 +295,26 @@ const uploadPhotoHandler = async (request, h) => {
         const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
         const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
-
-        const [user] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
-        if (!user) throw new Error('User not found');
-        console.log("User ID: ", userId)
+    
+        const [rows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
+        if (rows.length === 0) throw new Error('User not found');
+    
+        // Ambil data pengguna dari hasil query
+        const user = rows[0];
+        console.log("User ID: ", userId);
         const { age, bb } = user;
         console.log("Age:", age, "BB:", bb);
+    
         const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, age, bb]);
-
+    
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
         pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
-
+    
         await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
         });
-
+    
         const output = JSON.parse(scriptOutput.trim());
         return h.response(output).code(200);
     } catch (error) {
@@ -319,6 +323,7 @@ const uploadPhotoHandler = async (request, h) => {
             message: `Failed to process: ${error.message}`,
         }).code(500);
     }
+    
 };
 
 
