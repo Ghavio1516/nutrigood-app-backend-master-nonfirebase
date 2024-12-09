@@ -114,16 +114,21 @@ def parse_nutrition_info(extracted_text):
 # Fungsi untuk prediksi model
 def predict_nutrition_info(model, inputs):
     try:
+        # Konversi input ke tensor
         input_tensor = tf.convert_to_tensor([inputs], dtype=tf.float32)
+
         # Jika model adalah Keras (.keras format)
         if isinstance(model, tf.keras.Model):
             prediction = model(input_tensor)  # Keras model langsung mengembalikan output
         else:
             # Untuk TensorFlow SavedModel (jika digunakan)
             prediction = model.signatures["serving_default"](input_tensor)["output_0"]
-        # Pastikan prediction berbentuk array atau list
-        if isinstance(prediction, (tf.Tensor, np.ndarray)):
-            return prediction.numpy().tolist() if isinstance(prediction, tf.Tensor) else prediction.tolist()
+
+        # Konversi prediksi menjadi list atau float
+        if isinstance(prediction, tf.Tensor):
+            return prediction.numpy().tolist()  # Konversi Tensor ke list
+        elif isinstance(prediction, np.ndarray):
+            return prediction.tolist()  # Konversi NumPy array ke list
         elif isinstance(prediction, list):
             return prediction
         else:
@@ -167,12 +172,12 @@ if __name__ == "__main__":
         if prediction is None:
             response = {"message": "Model prediction failed", "nutrition_info": nutrition_info}
         else:
+            # Konversi prediksi menjadi JSON-serializable
             response = {
                 "message": "Berhasil",
                 "nutrition_info": nutrition_info,
-                "prediction": prediction
+                "prediction": [float(p) for p in prediction],  # Pastikan tipe float untuk JSON
             }
-
         print(json.dumps(response, indent=4))
 
     except Exception as e:
