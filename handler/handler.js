@@ -280,6 +280,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const tf = require('@tensorflow/tfjs-node');
 
+// Handler untuk mengunggah dan memproses foto
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
@@ -295,7 +296,7 @@ const uploadPhotoHandler = async (request, h) => {
     try {
         console.log("Starting photo upload and processing...");
 
-        // Decode Base64 dan simpan sebagai file
+        // Decode Base64 and save the image
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
@@ -314,7 +315,7 @@ const uploadPhotoHandler = async (request, h) => {
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
 
-        // Eksekusi skrip OCR Python
+        // Execute OCR Python script
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
@@ -323,11 +324,11 @@ const uploadPhotoHandler = async (request, h) => {
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
-            console.log(`Python stdout: ${data.toString()}`); // Log output
+            console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data.toString()}`); // Log errors
+            console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
         });
 
         const ocrResult = await new Promise((resolve, reject) => {
@@ -352,7 +353,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         console.log("OCR Result:", ocrResult);
 
-        // Ambil data pengguna dari database
+        // Retrieve user data from database
         const [userRows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
         if (userRows.length === 0) {
             throw new Error('User data not found');
@@ -361,38 +362,33 @@ const uploadPhotoHandler = async (request, h) => {
         const { age, bb } = userRows[0];
         console.log("User Data:", { age, bb });
 
-        // Siapkan input untuk model
+        // Combine OCR and database inputs for the model
         const modelInput = {
             sajian_per_kemasan: ocrResult["Sajian per kemasan"],
-            sugars: parseFloat(ocrResult["Sugars"].replace(/[^\d.]/g, '')), // Ambil angka dari "12g"
-            total_sugars: parseFloat(ocrResult["Total Sugar"].replace(/[^\d.]/g, '')), // Ambil angka
+            sugars: parseFloat(ocrResult["Sugars"].replace(/[^\d.]/g, '')), // Extract numeric value from "12g"
+            total_sugars: parseFloat(ocrResult["Total Sugar"].replace(/[^\d.]/g, '')), // Extract numeric value
             age: parseInt(age, 10),
             bb: parseFloat(bb),
         };
 
         console.log("Model Input:", modelInput);
 
-        // Load dan jalankan model TensorFlow
-        const modelPath = path.join(__dirname, '../model/model_Fixs_5Variabel.h5');
+        // Load and run TensorFlow model
+        const modelPath = path.join(__dirname, '../model/model_Fix_5Variabel.keras');
         const model = await tf.loadLayersModel(`file://${modelPath}`);
 
+        // Prepare input for the model
         const inputTensor = tf.tensor2d(
-            [[
-                modelInput.sajian_per_kemasan,
-                modelInput.sugars,
-                modelInput.total_sugars,
-                modelInput.age,
-                modelInput.bb,
-            ]],
+            [[modelInput.sajian_per_kemasan, modelInput.sugars, modelInput.total_sugars, modelInput.age, modelInput.bb]],
             [1, 5]
         );
 
         const prediction = model.predict(inputTensor);
-        const predictionArray = prediction.dataSync();
+        const predictionArray = Array.from(prediction.dataSync());
 
         console.log("Model Prediction:", predictionArray);
 
-        // Kirim hasil ke klien
+        // Construct the final response
         return h.response({
             status: 'success',
             message: 'Photo processed successfully',
