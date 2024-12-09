@@ -55,11 +55,12 @@ serving_variations = [
 
 # Fungsi untuk ekstraksi teks dari gambar
 def extract_text_from_image(image_path):
+    logging.info(f"Starting OCR for image: {image_path}")
     results = ocr.ocr(image_path, cls=True)
     full_text = "\n".join([line[1][0] for line in results[0]])
 
     if full_text.strip():
-        logging.warning(f"Teks hasil OCR:\n{full_text.strip()}")
+        logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
     else:
         logging.warning("Teks hasil OCR kosong.")
     
@@ -67,11 +68,11 @@ def extract_text_from_image(image_path):
 
 # Parsing teks hasil OCR
 def parse_nutrition_info(extracted_text):
+    logging.info("Parsing nutrition information from OCR text.")
     nutrition_data = {}
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
-    # Pola regex terbaru
     patterns = {
         'Sajian per kemasan': rf'([0-9]+)\s*(?:[:\-]|\s*)?\s*({serving_pattern})|({serving_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+)',
         'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
@@ -89,6 +90,7 @@ def parse_nutrition_info(extracted_text):
                 try:
                     numeric_value = float(re.search(r"[\d.]+", found_value).group())
                     nutrition_data[key] = numeric_value
+                    logging.info(f"Extracted {key}: {numeric_value}")
                 except (ValueError, AttributeError):
                     logging.warning(f"Invalid value for {key}: {found_value}, setting to 0.0")
                     nutrition_data[key] = 0.0
@@ -105,6 +107,7 @@ def parse_nutrition_info(extracted_text):
     if "Sugars" in nutrition_data and "Sajian per kemasan" in nutrition_data:
         try:
             nutrition_data["Total Sugar"] = nutrition_data["Sugars"] * nutrition_data["Sajian per kemasan"]
+            logging.info(f"Calculated Total Sugar: {nutrition_data['Total Sugar']}")
         except TypeError:
             logging.error("Error calculating Total Sugar, setting to 0.0")
             nutrition_data["Total Sugar"] = 0.0
@@ -113,26 +116,13 @@ def parse_nutrition_info(extracted_text):
 
 # Fungsi untuk prediksi model
 def predict_nutrition_info(model, inputs):
+    logging.info(f"Predicting nutrition info with inputs: {inputs}")
     try:
-        # Konversi input ke tensor
         input_tensor = tf.convert_to_tensor([inputs], dtype=tf.float32)
-
-        # Jika model adalah Keras (.keras format)
-        if isinstance(model, tf.keras.Model):
-            prediction = model(input_tensor)  # Keras model langsung mengembalikan output
-        else:
-            # Untuk TensorFlow SavedModel (jika digunakan)
-            prediction = model.signatures["serving_default"](input_tensor)["output_0"]
-
-        # Konversi prediksi menjadi list atau float
-        if isinstance(prediction, tf.Tensor):
-            return prediction.numpy().tolist()  # Konversi Tensor ke list
-        elif isinstance(prediction, np.ndarray):
-            return prediction.tolist()  # Konversi NumPy array ke list
-        elif isinstance(prediction, list):
-            return prediction
-        else:
-            raise ValueError(f"Unexpected prediction type: {type(prediction)}")
+        prediction = model(input_tensor)
+        prediction = prediction.numpy().tolist()
+        logging.info(f"Prediction result: {prediction}")
+        return prediction
     except Exception as e:
         logging.error(f"Error during prediction: {e}")
         return None
@@ -140,9 +130,12 @@ def predict_nutrition_info(model, inputs):
 # Fungsi utama
 if __name__ == "__main__":
     try:
+        logging.info("Starting OCR and model prediction pipeline.")
         image_path = sys.argv[1]
         age = float(sys.argv[2])
         bb = float(sys.argv[3])
+
+        logging.info(f"Image path: {image_path}, Age: {age}, BB: {bb}")
 
         image = cv2.imread(image_path)
         if image is None:
@@ -153,6 +146,7 @@ if __name__ == "__main__":
 
         if not nutrition_info:
             response = {"message": "Tidak ditemukan", "nutrition_info": {}}
+            logging.info("No nutrition information extracted.")
             print(json.dumps(response, indent=4))
             sys.exit(0)
 
@@ -163,7 +157,8 @@ if __name__ == "__main__":
             age,
             bb,
         ]
-        print(json.dumps(model_input, indent=4))
+        logging.info(f"Model input: {model_input}")
+
         if not all(isinstance(value, (int, float)) for value in model_input):
             raise ValueError(f"Invalid input for model: {model_input}")
 
@@ -172,12 +167,12 @@ if __name__ == "__main__":
         if prediction is None:
             response = {"message": "Model prediction failed", "nutrition_info": nutrition_info}
         else:
-            # Konversi prediksi menjadi JSON-serializable
             response = {
                 "message": "Berhasil",
                 "nutrition_info": nutrition_info,
-                "prediction": [float(p) for p in prediction],  # Pastikan tipe float untuk JSON
+                "prediction": [float(p) for p in prediction],
             }
+        logging.info(f"Final response: {response}")
         print(json.dumps(response, indent=4))
 
     except Exception as e:
