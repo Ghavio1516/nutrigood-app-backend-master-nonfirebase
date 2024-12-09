@@ -2,67 +2,11 @@ const data = require('../database/database');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { spawn } = require('child_process');
 
 // Fungsi untuk menghasilkan SHA-256 hash
 function generateUniqueId(email) {
     return crypto.createHash('sha256').update(email).digest('hex');
 }
-
-// Handler untuk mengunggah foto dan menganalisis nutrisi
-const analyzeNutritionHandler = async (request, h) => {
-    const { userId } = request.auth; // Mendapatkan userId dari JWT token
-    const { base64Image } = request.payload;
-
-    if (!base64Image) {
-        return h.response({
-            status: 'fail',
-            message: 'Missing base64Image',
-        }).code(400);
-    }
-
-    try {
-        // Konversi gambar dari base64 ke file fisik
-        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
-        const filePath = `/tmp/${userId}_${Date.now()}.png`;
-        fs.writeFileSync(filePath, buffer);
-
-        // Path ke model TensorFlow
-        const modelPath = path.join(__dirname, '../model/analisis-nutrisi.h5');
-
-        // Jalankan Python script
-        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, modelPath]);
-
-        let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
-        pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
-
-        await new Promise((resolve, reject) => {
-            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
-        });
-
-        const output = JSON.parse(scriptOutput.trim());
-
-        if (output.message === 'Error') {
-            return h.response({
-                status: 'fail',
-                message: 'Failed to analyze nutrition data',
-            }).code(500);
-        }
-
-        return h.response({
-            status: 'success',
-            data: output,
-        }).code(200);
-    } catch (error) {
-        console.error(error);
-        return h.response({
-            status: 'fail',
-            message: `Failed to process: ${error.message}`,
-        }).code(500);
-    }
-};
-
 
 // Handler untuk menambahkan produk
 const addProductHandler = async (request, h) => {
@@ -330,9 +274,6 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
 
 // Handler untuk mengunggah dan memproses foto
 const uploadPhotoHandler = async (request, h) => {
@@ -347,38 +288,57 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
+        // Konversi gambar dari base64 ke file fisik
         const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
         const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
-    
-        const [rows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
-        if (rows.length === 0) throw new Error('User not found');
-    
-        // Ambil data pengguna dari hasil query
-        const user = rows[0];
-        console.log("User ID: ", userId);
-        const { age, bb } = user;
-        console.log("Age:", age, "BB:", bb);
-    
-        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, age, bb]);
-    
+
+        // Path ke model TensorFlow
+        const modelPath = path.join(__dirname, '../model/analisis-nutrisi.h5');
+
+        // Jalankan skrip Python untuk OCR dan analisis
+        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, modelPath]);
+
         let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
-        pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
-    
-        await new Promise((resolve, reject) => {
-            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
+        pythonProcess.stdout.on('data', (data) => {
+            scriptOutput += data.toString();
         });
-    
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error(`Error in Python script: ${data}`);
+        });
+
+        await new Promise((resolve, reject) => {
+            pythonProcess.on('close', (code) => {
+                if (code === 0) {
+                    resolve();
+                } else {
+                    reject(new Error(`Python script exited with code ${code}`));
+                }
+            });
+        });
+
+        // Parse hasil JSON dari Python script
         const output = JSON.parse(scriptOutput.trim());
-        return h.response(output).code(200);
+
+        if (output.message === 'Error') {
+            return h.response({
+                status: 'fail',
+                message: 'Failed to analyze nutrition data',
+            }).code(500);
+        }
+
+        return h.response({
+            status: 'success',
+            data: output,
+        }).code(200);
     } catch (error) {
+        console.error(`Error in uploadPhotoHandler: ${error.message}`);
         return h.response({
             status: 'fail',
             message: `Failed to process: ${error.message}`,
         }).code(500);
     }
-    
 };
 
 
