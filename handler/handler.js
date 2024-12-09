@@ -275,9 +275,11 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
+const data = require('../database/database');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const tf = require('@tensorflow/tfjs-node');
 
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
@@ -294,7 +296,7 @@ const uploadPhotoHandler = async (request, h) => {
     try {
         console.log("Starting photo upload and processing...");
 
-        // Decode Base64 and save image
+        // Decode Base64 dan simpan sebagai file
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
@@ -313,7 +315,7 @@ const uploadPhotoHandler = async (request, h) => {
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
 
-        // Execute OCR Python script
+        // Eksekusi skrip OCR Python
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
@@ -322,11 +324,11 @@ const uploadPhotoHandler = async (request, h) => {
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
-            console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
+            console.log(`Python stdout: ${data.toString()}`); // Log output
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
+            console.error(`Python stderr: ${data.toString()}`); // Log errors
         });
 
         const ocrResult = await new Promise((resolve, reject) => {
@@ -351,7 +353,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         console.log("OCR Result:", ocrResult);
 
-        // Retrieve user data from database
+        // Ambil data pengguna dari database
         const [userRows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
         if (userRows.length === 0) {
             throw new Error('User data not found');
@@ -360,25 +362,29 @@ const uploadPhotoHandler = async (request, h) => {
         const { age, bb } = userRows[0];
         console.log("User Data:", { age, bb });
 
-        // Combine OCR and database inputs for the model
+        // Siapkan input untuk model
         const modelInput = {
             sajian_per_kemasan: ocrResult["Sajian per kemasan"],
-            sugars: parseFloat(ocrResult["Sugars"].replace(/[^\d.]/g, '')), // Extract numeric value from "12g"
-            total_sugars: parseFloat(ocrResult["Total Sugar"].replace(/[^\d.]/g, '')), // Extract numeric value
+            sugars: parseFloat(ocrResult["Sugars"].replace(/[^\d.]/g, '')), // Ambil angka dari "12g"
+            total_sugars: parseFloat(ocrResult["Total Sugar"].replace(/[^\d.]/g, '')), // Ambil angka
             age: parseInt(age, 10),
             bb: parseFloat(bb),
         };
 
         console.log("Model Input:", modelInput);
 
-        // Load and run TensorFlow model
-        const modelPath = path.join(__dirname, '/home/ghavio_rizky_ananda_budiawan_tik/nutrigood-app-backend-master-nonfirebase/model/model_Fixs_5Variabel.h5');
-        const tf = require('@tensorflow/tfjs-node');
-        const model = await tf.loadLayersModel(`file://${modelPath}`);
+        // Load dan jalankan model TensorFlow
+        const modelPath = path.join(__dirname, '../model/model_Fixs_5Variabel.h5');
+        const model = await tf.node.loadSavedModel(modelPath);
 
-        // Prepare input for the model
         const inputTensor = tf.tensor2d(
-            [[modelInput.sajian_per_kemasan, modelInput.sugars, modelInput.total_sugars, modelInput.age, modelInput.bb]],
+            [[
+                modelInput.sajian_per_kemasan,
+                modelInput.sugars,
+                modelInput.total_sugars,
+                modelInput.age,
+                modelInput.bb,
+            ]],
             [1, 5]
         );
 
@@ -387,7 +393,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         console.log("Model Prediction:", predictionArray);
 
-        // Construct the final response
+        // Kirim hasil ke klien
         return h.response({
             status: 'success',
             message: 'Photo processed successfully',
