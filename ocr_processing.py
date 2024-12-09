@@ -7,7 +7,7 @@ from paddleocr import PaddleOCR
 
 # Konfigurasi logging ke stderr
 logging.basicConfig(
-    level=logging.ERROR,  # Hanya log error penting
+    level=logging.INFO,  # Ubah menjadi INFO untuk mencetak log penting
     format='%(asctime)s - %(levelname)s - %(message)s',
     stream=sys.stderr
 )
@@ -16,7 +16,7 @@ logging.basicConfig(
 ocr = PaddleOCR(
     use_angle_cls=True,
     lang='en',
-    show_log=False  # Nonaktifkan log PaddleOCR
+    show_log=False  # Nonaktifkan log PaddleOCR internal
 )
 
 # Variasi teks untuk pencarian
@@ -46,6 +46,10 @@ serving_variations = [
 def extract_text_from_image(image_path):
     results = ocr.ocr(image_path, cls=True)
     full_text = "\n".join([line[1][0] for line in results[0]])
+    
+    # Tambahkan log teks hasil OCR
+    logging.info(f"Teks hasil OCR: \n{full_text.strip()}")
+    
     return full_text.strip()
 
 # Parsing teks hasil OCR
@@ -63,6 +67,9 @@ def parse_nutrition_info(extracted_text):
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
             nutrition_data[key] = match.group(2).strip()
+            logging.info(f"{key} ditemukan: {nutrition_data[key]}")
+        else:
+            logging.warning(f"Tidak ditemukan data untuk {key}.")
 
     # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     serving_count = int(nutrition_data.get("Sajian per kemasan", 1))
@@ -73,6 +80,7 @@ def parse_nutrition_info(extracted_text):
     if sugar_value:
         sugar_value = float(re.search(r"[\d.]+", sugar_value).group())
         nutrition_data["Total Sugar"] = f"{sugar_value * serving_count:.2f} g"
+        logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
 
     return nutrition_data
 
@@ -85,12 +93,14 @@ if __name__ == "__main__":
         if image is None:
             raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
 
+        logging.info(f"Memproses gambar: {image_path}")
+
         # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
 
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
-        logging.info("Teks setelah dibersihkan:\n%s", extracted_text)
+
         # Cek hasil dan output JSON ke stdout
         if not nutrition_info:
             response = {"message": "Tidak ditemukan", "nutrition_info": {}}
