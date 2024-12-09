@@ -275,7 +275,6 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
-const data = require('../database/database');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
