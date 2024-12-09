@@ -278,28 +278,6 @@ const loginUserHandler = async (request, h) => {
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const tf = require('@tensorflow/tfjs-node');
-// Load Model Keras
-const MODEL_PATH = path.join(__dirname, '../model/model_Fix_5Variabel.keras');
-let model;
-
-(async () => {
-    try {
-        console.log(`Loading model from ${MODEL_PATH}`);
-        model = await tf.loadLayersModel(`file://${MODEL_PATH}`);
-        console.log("Model loaded successfully");
-    } catch (error) {
-        console.error("Failed to load model:", error);
-    }
-})();
-
-// Fungsi untuk melakukan prediksi
-async function predictNutrition(inputs) {
-    const inputTensor = tf.tensor2d([inputs], [1, 5]);
-    const prediction = model.predict(inputTensor);
-    const predictionArray = prediction.dataSync();
-    return Array.from(predictionArray); 
-}
 
 // Handler untuk mengunggah dan memproses foto
 const uploadPhotoHandler = async (request, h) => {
@@ -307,7 +285,6 @@ const uploadPhotoHandler = async (request, h) => {
     const { base64Image } = request.payload;
 
     if (!base64Image) {
-        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -315,92 +292,38 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
-        console.log("Starting photo upload and processing...");
-
-        // Decode Base64 and save the image
-        const base64Data = base64Image.split(',')[1];
-        const buffer = Buffer.from(base64Data, 'base64');
-        const savedFolder = path.join(__dirname, '../saved_photos');
-
-        if (!fs.existsSync(savedFolder)) {
-            console.log("Creating saved_photos directory...");
-            fs.mkdirSync(savedFolder, { recursive: true });
-        }
-
-        const now = new Date();
-        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
-        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
-        const finalFileName = `${userId}_${time}-${date}.jpg`;
-        const filePath = path.join(savedFolder, finalFileName);
-
+        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
+        const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
-        console.log(`Photo saved at: ${filePath}`);
-
-        // Jalankan Python OCR
-        const scriptPath = path.join(__dirname, '../ocr_processing.py');
-        const pythonProcess = spawn('python3', [scriptPath, filePath]);
-
+    
+        const [rows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
+        if (rows.length === 0) throw new Error('User not found');
+    
+        // Ambil data pengguna dari hasil query
+        const user = rows[0];
+        console.log("User ID: ", userId);
+        const { age, bb } = user;
+        console.log("Age:", age, "BB:", bb);
+    
+        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, age, bb]);
+    
         let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => {
-            scriptOutput += data.toString();
-        });
-
-        pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data.toString()}`);
-        });
-
+        pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
+        pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
+    
         await new Promise((resolve, reject) => {
-            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject(new Error('Python script exited with error'))));
+            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
         });
-
+    
         const output = JSON.parse(scriptOutput.trim());
-
-        if (output.message !== "Berhasil" || !output.nutrition_info) {
-            throw new Error("OCR tidak berhasil menemukan informasi nutrisi.");
-        }
-
-        // Ambil data user dari database
-        const [userRows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
-        if (userRows.length === 0) {
-            throw new Error("User data not found");
-        }
-
-        const { age, bb } = userRows[0];
-        console.log("User Data:", { age, bb });
-
-        // Siapkan input model
-        const modelInput = [
-            parseFloat(output.nutrition_info["Sajian per kemasan"] || 1),
-            parseFloat(output.nutrition_info["Sugars"].replace(/[^\d.]/g, '') || 0),
-            parseFloat(output.nutrition_info["Total Sugar"].replace(/[^\d.]/g, '') || 0),
-            parseFloat(age),
-            parseFloat(bb),
-        ];
-
-        console.log("Model Input:", modelInput);
-
-        // Prediksi menggunakan model
-        const prediction = await predictNutrition(modelInput);
-
-        console.log("Model Prediction:", prediction);
-
-        // Berikan respons akhir
-        return h.response({
-            status: 'success',
-            message: 'Photo uploaded and processed successfully',
-            data: {
-                prediction,
-                nutrition_info: output.nutrition_info,
-            },
-        }).code(200);
-
+        return h.response(output).code(200);
     } catch (error) {
-        console.error('Error processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: `Failed to upload and process photo: ${error.message}`,
+            message: `Failed to process: ${error.message}`,
         }).code(500);
     }
+    
 };
 
 
