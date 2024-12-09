@@ -2,6 +2,7 @@ import cv2
 import re
 import json
 import logging
+import sys
 from paddleocr import PaddleOCR
 
 # Konfigurasi logging
@@ -25,7 +26,7 @@ sugar_variations = [
 
 serving_variations = [
     'Sajian per kemasan', 'Sajian perkemasan', 'Serving per pack', 'Serving perpack',
-    'Serving per package', 'Serving perpackage', 'Servings Per Container', 'Servings Per Container about','Sajian perkemasan/Serving per pack'
+    'Serving per package', 'Serving perpackage', 'Servings Per Container', 'Servings Per Container about', 'Sajian perkemasan/Serving per pack'
 ]
 
 # Ekstraksi teks dari gambar menggunakan PaddleOCR
@@ -51,10 +52,10 @@ def clean_text(ocr_text):
 # Parsing informasi nutrisi dan menghitung Total Sugar
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
-    sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)  # Gabungkan variasi gula
-    serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)  # Gabungkan variasi sajian
+    sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
+    serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
     patterns = {
-        'Sajian per kemasan': rf'({"|".join(serving_variations)})[:\-\s]*(\d+)',  # Regex diperbaiki
+        'Sajian per kemasan': rf'({serving_pattern})[:\-\s]*(\d+)',
         'Sugars': rf'({sugar_pattern})[:\-\s]*(\d+\s*[gG]|mg)'
     }
 
@@ -69,16 +70,23 @@ def parse_nutrition_info(extracted_text):
         except Exception as e:
             logging.error(f"Error processing key {key}: {str(e)}")
 
+    # Gunakan nilai default 1 jika "Sajian per kemasan" tidak ditemukan
+    serving_count = nutrition_data.get("Sajian per kemasan")
+    if not serving_count:
+        logging.warning("Serving size tidak ditemukan, menggunakan nilai default 1.")
+        serving_count = 1
+    else:
+        serving_count = int(serving_count)
+
     # Hitung Total Sugar
     try:
         sugar_value = nutrition_data.get("Sugars")
-        serving_count = nutrition_data.get("Sajian per kemasan")
-        if sugar_value and serving_count:
-            # Ambil angka dari "Sugars" dan "Sajian per kemasan"
+        if sugar_value:
             sugar_value = float(re.search(r"[\d.]+", sugar_value).group())
-            serving_count = int(serving_count)
             total_sugar = sugar_value * serving_count
             nutrition_data["Total Sugar"] = f"{total_sugar:.2f} g"  # Tambahkan Total Sugar
+        else:
+            logging.warning("Gula tidak ditemukan, Total Sugar tidak dapat dihitung.")
     except Exception as e:
         logging.error(f"Error calculating Total Sugar: {str(e)}")
 
@@ -88,7 +96,7 @@ def parse_nutrition_info(extracted_text):
 if __name__ == "__main__":
     try:
         # Path gambar eksplisit
-        image_path = sys.argv[1]  # Path tetap
+        image_path = sys.argv[1]  # Path diambil dari argumen command line
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
