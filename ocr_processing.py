@@ -7,7 +7,7 @@ from paddleocr import PaddleOCR
 
 # Konfigurasi logging ke stderr
 logging.basicConfig(
-    level=logging.INFO,  # Ubah menjadi INFO untuk mencetak log penting
+    level=logging.INFO,  # Ubah level ke INFO agar log penting ditampilkan
     format='%(asctime)s - %(levelname)s - %(message)s',
     stream=sys.stderr
 )
@@ -16,7 +16,7 @@ logging.basicConfig(
 ocr = PaddleOCR(
     use_angle_cls=True,
     lang='en',
-    show_log=False  # Nonaktifkan log PaddleOCR internal
+    show_log=False  # Nonaktifkan log internal PaddleOCR
 )
 
 # Variasi teks untuk pencarian
@@ -48,7 +48,10 @@ def extract_text_from_image(image_path):
     full_text = "\n".join([line[1][0] for line in results[0]])
     
     # Tambahkan log teks hasil OCR
-    logging.info(f"Teks hasil OCR: \n{full_text.strip()}")
+    if full_text.strip():
+        logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
+    else:
+        logging.warning("Teks hasil OCR kosong.")
     
     return full_text.strip()
 
