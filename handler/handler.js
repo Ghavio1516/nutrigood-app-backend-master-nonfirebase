@@ -339,7 +339,7 @@ const uploadPhotoHandler = async (request, h) => {
                             });
                         } else if (output.nutrition_info && Object.keys(output.nutrition_info).length > 0) {
                             resolve({
-                                message: output.message,
+                                message: "Berhasil",
                                 nutrition_info: output.nutrition_info,
                             });
                         } else {
@@ -378,6 +378,7 @@ const uploadPhotoHandler = async (request, h) => {
         }).code(500);
     }
 };
+
 
 // Ekspor semua handler
 module.exports = {

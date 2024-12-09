@@ -37,7 +37,6 @@ serving_variations = [
     'Jumlah Porsi', 'Total Servings'
 ]
 
-
 # Ekstraksi teks dari gambar menggunakan PaddleOCR
 def extract_text_from_image(image_path):
     results = ocr.ocr(image_path, cls=True)
