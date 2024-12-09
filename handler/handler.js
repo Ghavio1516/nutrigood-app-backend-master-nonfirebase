@@ -373,8 +373,8 @@ const uploadPhotoHandler = async (request, h) => {
         console.log("Model Input:", modelInput);
 
         // Load dan jalankan model TensorFlow
-        const modelPath = path.join(__dirname, '../model/model_Fixs_5Variabel.h5'); // Pastikan path benar
-        const model = await tf.node.loadLayersModel(`file://${modelPath}`); // Gunakan `file://` untuk akses model HDF5
+        const modelPath = path.join(__dirname, '../model/model_Fixs_5Variabel.h5');
+        const model = await tf.loadLayersModel(`file://${modelPath}`);
 
         const inputTensor = tf.tensor2d(
             [[
