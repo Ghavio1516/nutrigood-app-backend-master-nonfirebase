@@ -278,7 +278,6 @@ const loginUserHandler = async (request, h) => {
 };
 
 
-// Handler untuk mengunggah dan memproses foto
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
@@ -294,11 +293,9 @@ const uploadPhotoHandler = async (request, h) => {
     const modelPath = path.join(__dirname, '../model/analisis-nutrisi.h5');
 
     try {
-        // Simpan gambar sementara
         const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
         fs.writeFileSync(filePath, buffer);
 
-        // Jalankan skrip Python
         const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, modelPath]);
 
         let scriptOutput = '';
@@ -320,13 +317,12 @@ const uploadPhotoHandler = async (request, h) => {
             });
         });
 
-        // Filter JSON output
         const output = scriptOutput.trim();
         if (!output.startsWith('{') || !output.endsWith('}')) {
             throw new Error('Invalid JSON output from Python script');
         }
-
         const parsedOutput = JSON.parse(output);
+
         if (parsedOutput.message === 'Error') {
             return h.response({
                 status: 'fail',
@@ -345,12 +341,12 @@ const uploadPhotoHandler = async (request, h) => {
             message: `Failed to process: ${error.message}`,
         }).code(500);
     } finally {
-        // Hapus file temporer
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
     }
 };
+
 
 
 

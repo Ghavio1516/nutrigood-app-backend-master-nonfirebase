@@ -1,3 +1,6 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Nonaktifkan GPU
+
 import cv2
 import re
 import json
@@ -7,9 +10,6 @@ import tensorflow as tf
 import numpy as np
 from paddleocr import PaddleOCR
 
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1" 
-
 # Konfigurasi logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -18,31 +18,7 @@ logging.basicConfig(
 )
 
 # Inisialisasi PaddleOCR
-ocr = PaddleOCR(
-    use_angle_cls=True,
-    lang='en',
-    show_log=False
-)
-
-# Variasi pencarian teks
-sugar_variations = [
-    'Gula', 'Sugars', 'Sucrose', 'Fructose', 'Glucose', 'Lactose',
-    'Maltose', 'High fructose corn syrup', 'Brown Sugar', 'Powdered Sugar',
-    'Invert Sugar', 'Dextrose', 'Honey', 'Molasses', 'Agave', 'Agave Syrup',
-    'Syrup', 'Barley Malt', 'Cane Sugar', 'Coconut Sugar', 'Palm Sugar',
-    'Maple Syrup', 'Rice Syrup', 'Muscovado', 'Caramel', 'Turbinado Sugar',
-    'Raw Sugar'
-]
-
-serving_variations = [
-    'Sajian per kemasan', 'Serving per container', 'Servings per container',
-    'Sajian perkemasan', 'Serving per pack', 'Serving perpack',
-    'Serving per package', 'Serving perpackage', 'Servings Per Container about',
-    'Sajian perkemasan/Serving per pack', 'Jumlah porsi', 'Jumlah sajian',
-    'Takaran saji', 'Takaran saji per kemasan', 'Takaran saji per pack',
-    'Takaran saji per sajian', 'Portion per Container', 'Portion per Pack',
-    'Portion per Package', 'Porsi per wadah', 'Jumlah Porsi', 'Total Servings'
-]
+ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
 
 # Fungsi untuk ekstraksi teks dari gambar
 def extract_text_from_image(image_path):
@@ -57,14 +33,36 @@ def extract_text_from_image(image_path):
 # Parsing teks hasil OCR
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
-    sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
-    serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
+    # Pola pencarian untuk gula
+    sugar_pattern = '|'.join(re.escape(v) for v in [
+        'Sugars', 'Gula', 'Sucrose', 'Fructose', 'Glucose', 'Lactose',
+        'Maltose', 'High fructose corn syrup', 'Brown Sugar', 'Powdered Sugar',
+        'Invert Sugar', 'Dextrose', 'Honey', 'Molasses', 'Agave', 'Agave Syrup',
+        'Syrup', 'Barley Malt', 'Cane Sugar', 'Coconut Sugar', 'Palm Sugar',
+        'Maple Syrup', 'Rice Syrup', 'Muscovado', 'Caramel', 'Turbinado Sugar',
+        'Raw Sugar', 'Sweetener', 'Corn Syrup', 'Corn Sugar', 'Date Sugar',
+        'Palm Syrup', 'Glucose Syrup', 'Fruit Sugar'
+    ])
+
+    # Pola pencarian untuk sajian
+    serving_pattern = '|'.join(re.escape(v) for v in [
+        'Sajian per kemasan', 'Serving per container', 'Servings per container',
+        'Sajian perkemasan', 'Serving per pack', 'Serving perpack',
+        'Serving per package', 'Serving perpackage', 'Jumlah porsi',
+        'Jumlah sajian', 'Takaran saji', 'Takaran saji per kemasan',
+        'Takaran saji per pack', 'Takaran saji per sajian', 'Portion per Container',
+        'Portion per Pack', 'Portion per Package', 'Porsi per wadah',
+        'Total Servings', 'Porsi', 'Servings', 'Sajian'
+    ])
+
+    # Pola regex untuk mencari nilai-nilai nutrisi
     patterns = {
         'Sajian per kemasan': rf'([0-9]+)\s*(?:[:\-]|\s*)?\s*({serving_pattern})|({serving_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+)',
         'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
     }
 
+    # Pencarian data berdasarkan pola
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
@@ -79,29 +77,22 @@ def parse_nutrition_info(extracted_text):
             else:
                 logging.warning(f"Tidak ditemukan nilai untuk {key} meskipun pola cocok.")
         else:
-            logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
+            logging.warning(f"Tidak ditemukan data untuk {key}. Pola: {pattern}")
 
+    # Jika "Sajian per kemasan" tidak ditemukan, gunakan default 1
     if "Sajian per kemasan" not in nutrition_data:
-        logging.error("Sajian per kemasan tidak terdeteksi! Menggunakan default 1.")
-        serving_count = 1
-    else:
+        logging.warning("Sajian per kemasan tidak ditemukan! Menggunakan default 1.")
+        nutrition_data["Sajian per kemasan"] = "1"
+
+    # Hitung "Total Sugar" jika "Sugars" ditemukan
+    if "Sugars" in nutrition_data:
+        sugar_value = float(re.search(r"[\d.]+", nutrition_data["Sugars"]).group())
         serving_count = int(nutrition_data["Sajian per kemasan"])
-        logging.info(f"Sajian per kemasan ditemukan: {serving_count}")
-
-    nutrition_data["Sajian per kemasan"] = serving_count
-
-    sugar_value = nutrition_data.get("Sugars")
-    if sugar_value:
-        try:
-            sugar_amount = float(re.search(r"[\d.]+", sugar_value).group())
-            nutrition_data["Total Sugar"] = f"{sugar_amount * serving_count:.2f} g"
-            logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
-        except AttributeError:
-            logging.error("Tidak dapat menghitung Total Sugar karena nilai gula tidak valid.")
+        nutrition_data["Total Sugar"] = f"{sugar_value * serving_count:.2f} g"
 
     return nutrition_data
 
-# Analisis data nutrisi menggunakan model TensorFlow
+# Analisis dengan model TensorFlow
 def analyze_with_model(nutrition_info, model_path):
     try:
         model = tf.keras.models.load_model(model_path)
@@ -130,12 +121,6 @@ if __name__ == "__main__":
     try:
         image_path = sys.argv[1]
         model_path = sys.argv[2]
-
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
-
-        logging.info(f"Memproses gambar: {image_path}")
 
         extracted_text = extract_text_from_image(image_path)
         nutrition_info = parse_nutrition_info(extracted_text)
