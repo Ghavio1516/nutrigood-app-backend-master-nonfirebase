@@ -5,11 +5,11 @@ import logging
 import sys
 from paddleocr import PaddleOCR
 
-# Konfigurasi logging untuk mencetak ke stderr
+# Konfigurasi logging khusus untuk memastikan hanya JSON yang keluar ke stdout
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    stream=sys.stderr  # Pastikan log ditulis ke stderr
+    stream=sys.stderr  # Pastikan log dicetak ke stderr
 )
 
 # Inisialisasi PaddleOCR
@@ -18,7 +18,7 @@ ocr = PaddleOCR(
     lang='en'  # Menggunakan model bahasa Inggris
 )
 
-# Variasi teks untuk "Sugars" dan "Sajian per Kemasan"
+# Variasi teks
 sugar_variations = [
     'Gula', 'Sugars', 'Sucrose', 'Fructose', 'Glucose', 'Lactose',
     'Maltose', 'High fructose corn syrup', 'Brown Sugar', 'Powdered Sugar',
@@ -30,7 +30,7 @@ sugar_variations = [
 
 serving_variations = [
     'Sajian per kemasan', 'Sajian perkemasan', 'Serving per pack', 'Serving perpack',
-    'Serving per package', 'Serving perpackage', 'Servings Per Container', 
+    'Serving per package', 'Serving perpackage', 'Servings Per Container',
     'Servings Per Container about', 'Sajian perkemasan/Serving per pack',
     'Porsi per kemasan', 'Porsi per sajian', 'Porsi perpack', 'Porsi per package',
     'Takaran saji', 'Takaran saji per kemasan', 'Takaran saji per pack', 
@@ -41,7 +41,7 @@ serving_variations = [
     'Jumlah Porsi', 'Total Servings'
 ]
 
-# Ekstraksi teks dari gambar menggunakan PaddleOCR
+# Ekstraksi teks dari gambar
 def extract_text_from_image(image_path):
     results = ocr.ocr(image_path, cls=True)
     full_text = "\n".join([line[1][0] for line in results[0]])
@@ -77,10 +77,12 @@ def parse_nutrition_info(extracted_text):
             if match:
                 nutrition_data[key] = match.group(2).strip()
                 logging.info(f"Match found for {key}: {match.group(2)}")
+            else:
+                logging.warning(f"No match found for {key} using pattern {pattern}")
         except Exception as e:
             logging.error(f"Error processing key {key}: {str(e)}")
 
-    # Gunakan nilai default 1 jika "Sajian per kemasan" tidak ditemukan
+    # Gunakan nilai default jika "Sajian per kemasan" tidak ditemukan
     serving_count = nutrition_data.get("Sajian per kemasan")
     if not serving_count:
         serving_count = 1
@@ -94,7 +96,7 @@ def parse_nutrition_info(extracted_text):
         if sugar_value:
             sugar_value = float(re.search(r"[\d.]+", sugar_value).group())
             total_sugar = sugar_value * serving_count
-            nutrition_data["Total Sugar"] = f"{total_sugar:.2f} g"  # Tambahkan Total Sugar
+            nutrition_data["Total Sugar"] = f"{total_sugar:.2f} g"
         else:
             logging.info("Gula tidak ditemukan, Total Sugar tidak dapat dihitung.")
     except Exception as e:
@@ -102,16 +104,15 @@ def parse_nutrition_info(extracted_text):
 
     return nutrition_data
 
-# Fungsi utama untuk memproses gambar dan mengembalikan informasi nutrisi
+# Fungsi utama untuk memproses gambar
 if __name__ == "__main__":
     try:
-        # Path gambar eksplisit
-        image_path = sys.argv[1]  # Path diambil dari argumen command line
+        image_path = sys.argv[1]
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
 
-        # Ekstraksi teks dari gambar
+        # Ekstraksi teks
         extracted_text = extract_text_from_image(image_path)
 
         # Membersihkan teks hasil OCR
@@ -119,7 +120,7 @@ if __name__ == "__main__":
 
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(cleaned_text)
-        if not nutrition_info:  # Jika dictionary kosong
+        if not nutrition_info:
             response = {
                 "message": "Tidak ditemukan",
                 "nutrition_info": {}
@@ -130,11 +131,11 @@ if __name__ == "__main__":
                 "nutrition_info": nutrition_info
             }
 
-        # Cetak hanya JSON valid
+        # Cetak hanya JSON valid ke stdout
         print(json.dumps(response, indent=4))
 
     except Exception as e:
-        logging.error(f"Error: {str(e)}")
+        logging.error(f"Error: {str(e)}", file=sys.stderr)
         response = {
             "message": "Error",
             "nutrition_info": {}
