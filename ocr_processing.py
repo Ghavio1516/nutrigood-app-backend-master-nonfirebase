@@ -58,7 +58,7 @@ def parse_nutrition_info(extracted_text):
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
     patterns = {
-        'Sajian per kemasan': rf'({serving_pattern})\s*(?:[:\-]|\s*)\s*([0-9]+)',
+        'Sajian per kemasan': rf'([0-9]+)\s*(?:[:\-]|\s*)?\s*({serving_pattern})|({serving_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+)',
         'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
     }
 
