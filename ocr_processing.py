@@ -102,6 +102,7 @@ def analyze_with_model(nutrition_info, model_path):
         total_sugar = float(re.search(r"[\d.]+", nutrition_info.get("Total Sugar", "0")).group())
 
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
+        logging.info(f"Input data shape: {input_data.shape}")  # Log dimensi input
         input_data_normalized = input_data / np.max(input_data, axis=0)
 
         predictions = model.predict(input_data_normalized)
