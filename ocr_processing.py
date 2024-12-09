@@ -74,7 +74,15 @@ def parse_nutrition_info(extracted_text):
         else:
             logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
 
-    
+    # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
+    if "Sajian per kemasan" not in nutrition_data:
+        logging.error("Sajian per kemasan tidak terdeteksi! Menggunakan default 1.")
+        serving_count = 1
+    else:
+        serving_count = int(nutrition_data["Sajian per kemasan"])
+        logging.info(f"Sajian per kemasan ditemukan: {serving_count}")
+
+    nutrition_data["Sajian per kemasan"] = serving_count
 
     # Hitung Total Sugar jika tersedia
     sugar_value = nutrition_data.get("Sugars")
