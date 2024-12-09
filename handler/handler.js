@@ -2,11 +2,67 @@ const data = require('../database/database');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const { spawn } = require('child_process');
 
 // Fungsi untuk menghasilkan SHA-256 hash
 function generateUniqueId(email) {
     return crypto.createHash('sha256').update(email).digest('hex');
 }
+
+// Handler untuk mengunggah foto dan menganalisis nutrisi
+const analyzeNutritionHandler = async (request, h) => {
+    const { userId } = request.auth; // Mendapatkan userId dari JWT token
+    const { base64Image } = request.payload;
+
+    if (!base64Image) {
+        return h.response({
+            status: 'fail',
+            message: 'Missing base64Image',
+        }).code(400);
+    }
+
+    try {
+        // Konversi gambar dari base64 ke file fisik
+        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
+        const filePath = `/tmp/${userId}_${Date.now()}.png`;
+        fs.writeFileSync(filePath, buffer);
+
+        // Path ke model TensorFlow
+        const modelPath = path.join(__dirname, '../model/analisis-nutrisi.h5');
+
+        // Jalankan Python script
+        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, modelPath]);
+
+        let scriptOutput = '';
+        pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
+        pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
+
+        await new Promise((resolve, reject) => {
+            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
+        });
+
+        const output = JSON.parse(scriptOutput.trim());
+
+        if (output.message === 'Error') {
+            return h.response({
+                status: 'fail',
+                message: 'Failed to analyze nutrition data',
+            }).code(500);
+        }
+
+        return h.response({
+            status: 'success',
+            data: output,
+        }).code(200);
+    } catch (error) {
+        console.error(error);
+        return h.response({
+            status: 'fail',
+            message: `Failed to process: ${error.message}`,
+        }).code(500);
+    }
+};
 
 
 // Handler untuk menambahkan produk
