@@ -20,8 +20,8 @@ ocr = PaddleOCR(
     show_log=False
 )
 
-# Load TensorFlow model once
-MODEL_PATH = "./model"
+# Load TensorFlow SavedModel
+MODEL_PATH = "./model"  # Sesuaikan path ke folder SavedModel Anda
 try:
     print(f"Loading model from {MODEL_PATH}")
     model = tf.saved_model.load(MODEL_PATH)
@@ -56,7 +56,7 @@ def extract_text_from_image(image_path):
     full_text = "\n".join([line[1][0] for line in results[0]])
 
     if full_text.strip():
-        logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
+        logging.warning(f"Teks hasil OCR:\n{full_text.strip()}")
     else:
         logging.warning("Teks hasil OCR kosong.")
     
@@ -68,6 +68,7 @@ def parse_nutrition_info(extracted_text):
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
+    # Pola regex terbaru
     patterns = {
         'Sajian per kemasan': rf'([0-9]+)\s*(?:[:\-]|\s*)?\s*({serving_pattern})|({serving_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+)',
         'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
@@ -76,7 +77,11 @@ def parse_nutrition_info(extracted_text):
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
-            found_value = match.group(1) or match.group(4) if key == "Sajian per kemasan" else match.group(2)
+            if key == "Sajian per kemasan":
+                found_value = match.group(1) or match.group(4)
+            else:
+                found_value = match.group(2)
+
             if found_value:
                 nutrition_data[key] = found_value.strip()
                 logging.info(f"{key} ditemukan: {nutrition_data[key]}")
@@ -85,9 +90,11 @@ def parse_nutrition_info(extracted_text):
         else:
             logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
 
+    # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     if "Sajian per kemasan" not in nutrition_data:
         nutrition_data["Sajian per kemasan"] = 1
 
+    # Hitung Total Sugar jika tersedia
     sugar_value = nutrition_data.get("Sugars")
     if sugar_value:
         try:
@@ -98,7 +105,7 @@ def parse_nutrition_info(extracted_text):
 
     return nutrition_data
 
-# Fungsi untuk memprediksi menggunakan model
+# Fungsi untuk prediksi model
 def predict_nutrition_info(model, inputs):
     try:
         input_tensor = tf.convert_to_tensor([inputs], dtype=tf.float32)
@@ -112,8 +119,8 @@ def predict_nutrition_info(model, inputs):
 if __name__ == "__main__":
     try:
         image_path = sys.argv[1]
-        age = float(sys.argv[2])  # User's age passed as argument
-        bb = float(sys.argv[3])   # User's weight (bb) passed as argument
+        age = float(sys.argv[2])  # Age from CLI argument
+        bb = float(sys.argv[3])   # Weight from CLI argument
 
         image = cv2.imread(image_path)
         if image is None:
@@ -127,7 +134,7 @@ if __name__ == "__main__":
             print(json.dumps(response, indent=4))
             sys.exit(0)
 
-        # Model input preparation
+        # Model input
         model_input = [
             float(nutrition_info.get("Sajian per kemasan", 1)),
             float(nutrition_info.get("Sugars", "0").replace("g", "").strip()),
@@ -136,6 +143,7 @@ if __name__ == "__main__":
             bb
         ]
 
+        # Predict using model
         prediction = predict_nutrition_info(model, model_input)
 
         if prediction is None:
