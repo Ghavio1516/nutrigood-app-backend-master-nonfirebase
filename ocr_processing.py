@@ -169,7 +169,7 @@ if __name__ == "__main__":
         print(json.dumps(response, indent=4))
 
     except Exception as e:
-        logging.error(f"Error: {str(e)}")
+        #logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}}
         print(json.dumps(response, indent=4))
         sys.exit(1)
