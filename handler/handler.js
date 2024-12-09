@@ -8,6 +8,7 @@ function generateUniqueId(email) {
     return crypto.createHash('sha256').update(email).digest('hex');
 }
 
+
 // Handler untuk menambahkan produk
 const addProductHandler = async (request, h) => {
     const { userId } = request.auth; // Mendapatkan userId dari token JWT
