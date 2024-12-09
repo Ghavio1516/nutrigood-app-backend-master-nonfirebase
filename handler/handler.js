@@ -127,7 +127,6 @@ const getTodayProductsHandler = async (request, h) => {
 };
 
 // Handler untuk registrasi user
-// Handler untuk registrasi user
 const registerUserHandler = async (request, h) => {
     const { email, password, name, age, diabetes, bb } = request.payload;
 
@@ -314,7 +313,7 @@ const uploadPhotoHandler = async (request, h) => {
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
 
-        // Execute Python script
+        // Execute OCR Python script
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
@@ -330,21 +329,13 @@ const uploadPhotoHandler = async (request, h) => {
             console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
         });
 
-        const result = await new Promise((resolve, reject) => {
+        const ocrResult = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
                         const output = JSON.parse(scriptOutput.trim());
-                        if (output.message === "Tidak ditemukan") {
-                            resolve({
-                                message: "Tidak ditemukan",
-                                nutrition_info: null,
-                            });
-                        } else if (output.nutrition_info && Object.keys(output.nutrition_info).length > 0) {
-                            resolve({
-                                message: "Berhasil",
-                                nutrition_info: output.nutrition_info,
-                            });
+                        if (output.message === "Berhasil" && output.nutrition_info) {
+                            resolve(output.nutrition_info);
                         } else {
                             reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
                         }
@@ -358,30 +349,60 @@ const uploadPhotoHandler = async (request, h) => {
             });
         });
 
-        // Log the final response data
-        console.log("Final response data sent to client:", {
-            filePath,
-            message: result.message,
-            nutrition_info: result.nutrition_info,
-        });
+        console.log("OCR Result:", ocrResult);
 
+        // Retrieve user data from database
+        const [userRows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
+        if (userRows.length === 0) {
+            throw new Error('User data not found');
+        }
+
+        const { age, bb } = userRows[0];
+        console.log("User Data:", { age, bb });
+
+        // Combine OCR and database inputs for the model
+        const modelInput = {
+            sajian_per_kemasan: ocrResult["Sajian per kemasan"],
+            sugars: parseFloat(ocrResult["Sugars"].replace(/[^\d.]/g, '')), // Extract numeric value from "12g"
+            total_sugars: parseFloat(ocrResult["Total Sugar"].replace(/[^\d.]/g, '')), // Extract numeric value
+            age: parseInt(age, 10),
+            bb: parseFloat(bb),
+        };
+
+        console.log("Model Input:", modelInput);
+
+        // Load and run TensorFlow model
+        const modelPath = path.join(__dirname, '../model/model_Fixs_5Variabel.h5');
+        const tf = require('@tensorflow/tfjs-node');
+        const model = await tf.loadLayersModel(`file://${modelPath}`);
+
+        // Prepare input for the model
+        const inputTensor = tf.tensor2d(
+            [[modelInput.sajian_per_kemasan, modelInput.sugars, modelInput.total_sugars, modelInput.age, modelInput.bb]],
+            [1, 5]
+        );
+
+        const prediction = model.predict(inputTensor);
+        const predictionArray = prediction.dataSync();
+
+        console.log("Model Prediction:", predictionArray);
+
+        // Construct the final response
         return h.response({
             status: 'success',
-            message: 'Photo uploaded and processed successfully',
+            message: 'Photo processed successfully',
             data: {
-                message: result.message,
-                nutrition_info: result.nutrition_info,
+                nutrition_analysis: predictionArray,
             },
-        }).code(201);
+        }).code(200);
     } catch (error) {
-        console.error('Error uploading and processing photo:', error.message);
+        console.error('Error processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: 'Failed to upload and process photo',
+            message: `Failed to process photo: ${error.message}`,
         }).code(500);
     }
 };
-
 
 // Ekspor semua handler
 module.exports = {
