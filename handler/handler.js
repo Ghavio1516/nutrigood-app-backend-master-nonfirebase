@@ -372,7 +372,7 @@ const uploadPhotoHandler = async (request, h) => {
         console.log("Model Input:", modelInput);
 
         // Load and run TensorFlow model
-        const modelPath = path.join(__dirname, '../model/model_Fixs_5Variabel.h5');
+        const modelPath = path.join(__dirname, '/home/ghavio_rizky_ananda_budiawan_tik/nutrigood-app-backend-master-nonfirebase/model/model_Fixs_5Variabel.h5');
         const tf = require('@tensorflow/tfjs-node');
         const model = await tf.loadLayersModel(`file://${modelPath}`);
 
