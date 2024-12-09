@@ -57,15 +57,20 @@ def parse_nutrition_info(extracted_text):
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
+    # Pola regex terbaru
     patterns = {
         'Sajian per kemasan': rf'([0-9]+)\s*(?:[:\-]|\s*)?\s*({serving_pattern})|({serving_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+)',
-        'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
+        'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
     }
 
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
-            found_value = match.group(2)
+            if key == "Sajian per kemasan":
+                found_value = match.group(1) or match.group(4)
+            else:
+                found_value = match.group(2)
+
             if found_value:
                 nutrition_data[key] = found_value.strip()
                 logging.info(f"{key} ditemukan: {nutrition_data[key]}")
