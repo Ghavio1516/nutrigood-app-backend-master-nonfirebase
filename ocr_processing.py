@@ -67,10 +67,14 @@ def parse_nutrition_info(extracted_text):
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
-            nutrition_data[key] = match.group(2).strip()
-            logging.info(f"{key} ditemukan: {nutrition_data[key]}")
+            found_value = match.group(1) or match.group(2)
+            if found_value:
+                nutrition_data[key] = found_value.strip()
+                logging.info(f"{key} ditemukan: {nutrition_data[key]}")
+            else:
+                logging.warning(f"Tidak ditemukan nilai untuk {key} meskipun pola cocok.")
         else:
-            logging.warning(f"Tidak ditemukan data untuk {key}.")
+            logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
 
     # Tetapkan nilai default jika tidak ditemukan
     serving_count = int(nutrition_data.get("Sajian per kemasan", 1))
