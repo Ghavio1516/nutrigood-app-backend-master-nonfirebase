@@ -375,7 +375,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         // Load and run TensorFlow model
         const modelPath = path.join(__dirname, '../model/model_Fix_5Variabel.keras');
-        const model = await tf.loadLayersModel(`file://${modelPath}`);
+        const model = await tf.node.loadSavedModel(modelPath); // Load model as SavedModel format.
 
         // Prepare input for the model
         const inputTensor = tf.tensor2d(
