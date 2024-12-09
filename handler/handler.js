@@ -2,7 +2,6 @@ const data = require('../database/database');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const path = require('path');
 const { spawn } = require('child_process');
 
 // Fungsi untuk menghasilkan SHA-256 hash
