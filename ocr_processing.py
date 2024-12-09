@@ -5,6 +5,7 @@ import sys
 import logging
 import tensorflow as tf
 from paddleocr import PaddleOCR
+import numpy as np
 
 # Konfigurasi logging
 logging.basicConfig(
