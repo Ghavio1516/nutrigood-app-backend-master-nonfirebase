@@ -2,6 +2,7 @@ const data = require('../database/database');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
 
 // Fungsi untuk menghasilkan SHA-256 hash
 function generateUniqueId(email) {
