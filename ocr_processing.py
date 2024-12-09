@@ -5,8 +5,12 @@ import logging
 import sys
 from paddleocr import PaddleOCR
 
-# Konfigurasi logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Konfigurasi logging untuk mencetak ke stderr
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    stream=sys.stderr  # Pastikan log ditulis ke stderr
+)
 
 # Inisialisasi PaddleOCR
 ocr = PaddleOCR(
@@ -79,8 +83,8 @@ def parse_nutrition_info(extracted_text):
     # Gunakan nilai default 1 jika "Sajian per kemasan" tidak ditemukan
     serving_count = nutrition_data.get("Sajian per kemasan")
     if not serving_count:
-        logging.info("Serving size tidak ditemukan, menggunakan nilai default 1.")
         serving_count = 1
+        logging.info("Serving size tidak ditemukan, menggunakan nilai default 1.")
     else:
         serving_count = int(serving_count)
 
@@ -126,7 +130,7 @@ if __name__ == "__main__":
                 "nutrition_info": nutrition_info
             }
 
-        # Cetak hanya JSON yang valid
+        # Cetak hanya JSON valid
         print(json.dumps(response, indent=4))
 
     except Exception as e:
