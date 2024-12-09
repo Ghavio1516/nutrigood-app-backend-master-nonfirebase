@@ -143,25 +143,36 @@ def predict_nutrition_info(model, inputs):
 if __name__ == "__main__":
     try:
         logging.info("Starting OCR and model prediction pipeline.")
+        
+        # Ambil argumen dari command line
         image_path = sys.argv[1]
         age = float(sys.argv[2])
         bb = float(sys.argv[3])
 
         logging.info(f"Image path: {image_path}, Age: {age}, BB: {bb}")
 
+        # Cek apakah gambar bisa dibaca
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
+        logging.info("Gambar berhasil dibaca.")
 
+        # Proses OCR
         extracted_text = extract_text_from_image(image_path)
-        nutrition_info = parse_nutrition_info(extracted_text)
+        logging.info(f"Teks yang diekstraksi: {extracted_text}")
 
+        # Parsing teks hasil OCR
+        nutrition_info = parse_nutrition_info(extracted_text)
+        logging.info(f"Informasi nutrisi yang diparsing: {nutrition_info}")
+
+        # Cek apakah ada informasi nutrisi yang valid
         if not nutrition_info:
             response = {"message": "Tidak ditemukan", "nutrition_info": {}}
-            logging.info("No nutrition information extracted.")
+            logging.info("Tidak ada informasi nutrisi yang ditemukan.")
             print(json.dumps(response, indent=4))
             sys.exit(0)
 
+        # Siapkan input untuk model
         model_input = [
             nutrition_info.get("Sajian per kemasan", 1.0),
             nutrition_info.get("Sugars", 0.0),
@@ -171,13 +182,18 @@ if __name__ == "__main__":
         ]
         logging.info(f"Model input: {model_input}")
 
+        # Validasi input sebelum prediksi
         if not all(isinstance(value, (int, float)) for value in model_input):
             raise ValueError(f"Invalid input for model: {model_input}")
 
+        # Lakukan prediksi menggunakan model
         prediction = predict_nutrition_info(model, model_input)
+        logging.info(f"Hasil prediksi: {prediction}")
 
+        # Cek apakah prediksi berhasil
         if prediction is None:
             response = {"message": "Model prediction failed", "nutrition_info": nutrition_info}
+            logging.error("Prediksi model gagal.")
         else:
             response = {
                 "message": "Berhasil",
@@ -185,6 +201,8 @@ if __name__ == "__main__":
                 "prediction": [float(p) for p in prediction],
             }
         logging.info(f"Final response: {response}")
+
+        # Cetak hasil akhir
         print(json.dumps(response, indent=4))
 
     except Exception as e:
