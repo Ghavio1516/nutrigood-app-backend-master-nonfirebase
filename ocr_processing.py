@@ -5,21 +5,21 @@ import sys
 import logging
 from paddleocr import PaddleOCR
 
-# Konfigurasi logging ke stderr
+# Konfigurasi logging
 logging.basicConfig(
-    level=logging.INFO,  # Ubah level ke INFO agar log penting ditampilkan
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     stream=sys.stderr
 )
 
-# Inisialisasi PaddleOCR dengan log dinonaktifkan
+# Inisialisasi PaddleOCR
 ocr = PaddleOCR(
     use_angle_cls=True,
     lang='en',
-    show_log=False  # Nonaktifkan log internal PaddleOCR
+    show_log=False
 )
 
-# Variasi teks untuk pencarian
+# Variasi pencarian teks
 sugar_variations = [
     'Gula', 'Sugars', 'Sucrose', 'Fructose', 'Glucose', 'Lactose',
     'Maltose', 'High fructose corn syrup', 'Brown Sugar', 'Powdered Sugar',
@@ -30,26 +30,22 @@ sugar_variations = [
 ]
 
 serving_variations = [
-    'Sajian per kemasan', 'Sajian perkemasan', 'Serving per pack', 'Serving perpack',
-    'Serving per package', 'Serving perpackage', 'Servings Per Container', 
-    'Servings Per Container about', 'Sajian perkemasan/Serving per pack',
-    'Porsi per kemasan', 'Porsi per sajian', 'Porsi perpack', 'Porsi per package',
-    'Takaran saji', 'Takaran saji per kemasan', 'Takaran saji per pack', 
-    'Takaran saji per sajian', 'Serving Size', 'Per Serving', 
-    'Per Package', 'Each Package', 'Each Serving', 'Portion Size',
-    'Jumlah porsi', 'Jumlah sajian', 'Portion per Container', 
-    'Portion per Pack', 'Portion per Package', 'Porsi per wadah', 
-    'Jumlah Porsi', 'Total Servings'
+    'Sajian per kemasan', 'Serving per container', 'Servings per container',
+    'Sajian perkemasan', 'Serving per pack', 'Serving perpack',
+    'Serving per package', 'Serving perpackage', 'Servings Per Container about',
+    'Sajian perkemasan/Serving per pack', 'Jumlah porsi', 'Jumlah sajian',
+    'Takaran saji', 'Takaran saji per kemasan', 'Takaran saji per pack',
+    'Takaran saji per sajian', 'Portion per Container', 'Portion per Pack',
+    'Portion per Package', 'Porsi per wadah', 'Jumlah Porsi', 'Total Servings'
 ]
 
-# Fungsi untuk ekstraksi teks
+# Fungsi untuk ekstraksi teks dari gambar
 def extract_text_from_image(image_path):
     results = ocr.ocr(image_path, cls=True)
     full_text = "\n".join([line[1][0] for line in results[0]])
-    
-    # Tambahkan log teks hasil OCR
+
     if full_text.strip():
-        logging.warning(f"Teks hasil OCR:\n{full_text.strip()}")
+        logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
     else:
         logging.warning("Teks hasil OCR kosong.")
     
@@ -58,6 +54,8 @@ def extract_text_from_image(image_path):
 # Parsing teks hasil OCR
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
+
+    # Pola pencarian regex
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
@@ -74,7 +72,7 @@ def parse_nutrition_info(extracted_text):
         else:
             logging.warning(f"Tidak ditemukan data untuk {key}.")
 
-    # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
+    # Tetapkan nilai default jika tidak ditemukan
     serving_count = int(nutrition_data.get("Sajian per kemasan", 1))
     nutrition_data["Sajian per kemasan"] = serving_count
 
@@ -114,7 +112,6 @@ if __name__ == "__main__":
         print(json.dumps(response, indent=4))
 
     except Exception as e:
-        # Log error ke stderr
         logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}}
         print(json.dumps(response, indent=4))
