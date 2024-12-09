@@ -21,13 +21,13 @@ ocr = PaddleOCR(
 )
 
 # Load TensorFlow SavedModel
-MODEL_PATH = "./model"  # Sesuaikan path ke folder SavedModel Anda
+MODEL_PATH = "./model/model_Fix_5Variabel.keras"  # Sesuaikan path ke folder SavedModel Anda
 try:
-    print(f"Loading model from {MODEL_PATH}")
+    logging.info(f"Loading model from {MODEL_PATH}")
     model = tf.saved_model.load(MODEL_PATH)
-    print("Model loaded successfully")
+    logging.info("Model loaded successfully")
 except Exception as e:
-    print(f"Failed to load model: {e}")
+    logging.error(f"Failed to load model: {e}")
     sys.exit(1)
 
 # Variasi pencarian teks
@@ -62,7 +62,6 @@ def extract_text_from_image(image_path):
     
     return full_text.strip()
 
-# Parsing teks hasil OCR
 # Parsing teks hasil OCR
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
@@ -169,7 +168,7 @@ if __name__ == "__main__":
         print(json.dumps(response, indent=4))
 
     except Exception as e:
-        #logging.error(f"Error: {str(e)}")
+        logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}}
         print(json.dumps(response, indent=4))
         sys.exit(1)
