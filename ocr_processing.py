@@ -26,8 +26,17 @@ sugar_variations = [
 
 serving_variations = [
     'Sajian per kemasan', 'Sajian perkemasan', 'Serving per pack', 'Serving perpack',
-    'Serving per package', 'Serving perpackage', 'Servings Per Container', 'Servings Per Container about', 'Sajian perkemasan/Serving per pack'
+    'Serving per package', 'Serving perpackage', 'Servings Per Container', 
+    'Servings Per Container about', 'Sajian perkemasan/Serving per pack',
+    'Porsi per kemasan', 'Porsi per sajian', 'Porsi perpack', 'Porsi per package',
+    'Takaran saji', 'Takaran saji per kemasan', 'Takaran saji per pack', 
+    'Takaran saji per sajian', 'Serving Size', 'Per Serving', 
+    'Per Package', 'Each Package', 'Each Serving', 'Portion Size',
+    'Jumlah porsi', 'Jumlah sajian', 'Portion per Container', 
+    'Portion per Pack', 'Portion per Package', 'Porsi per wadah', 
+    'Jumlah Porsi', 'Total Servings'
 ]
+
 
 # Ekstraksi teks dari gambar menggunakan PaddleOCR
 def extract_text_from_image(image_path):
