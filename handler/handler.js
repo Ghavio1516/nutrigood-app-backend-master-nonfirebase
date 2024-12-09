@@ -278,7 +278,6 @@ const loginUserHandler = async (request, h) => {
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const tf = require('@tensorflow/tfjs-node');
 
 // Handler untuk mengunggah dan memproses foto
 const uploadPhotoHandler = async (request, h) => {
@@ -286,7 +285,6 @@ const uploadPhotoHandler = async (request, h) => {
     const { base64Image } = request.payload;
 
     if (!base64Image) {
-        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -294,116 +292,35 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
-        console.log("Starting photo upload and processing...");
-
-        // Decode Base64 and save the image
-        const base64Data = base64Image.split(',')[1];
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        const savedFolder = path.join(__dirname, '../saved_photos');
-        if (!fs.existsSync(savedFolder)) {
-            console.log("Creating saved_photos directory...");
-            fs.mkdirSync(savedFolder, { recursive: true });
-        }
-
-        const now = new Date();
-        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
-        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
-        const finalFileName = `${userId}_${time}-${date}.jpg`;
-        const filePath = path.join(savedFolder, finalFileName);
-
+        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
+        const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
-        console.log(`Photo saved at: ${filePath}`);
 
-        // Execute OCR Python script
-        const scriptPath = path.join(__dirname, '../ocr_processing.py');
-        console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
+        const [user] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
+        if (!user) throw new Error('User not found');
 
-        const pythonProcess = spawn('python3', [scriptPath, filePath]);
+        const { age, bb } = user;
+
+        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, age, bb]);
 
         let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => {
-            scriptOutput += data.toString();
-            console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
+        pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
+        pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
+
+        await new Promise((resolve, reject) => {
+            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
         });
 
-        pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
-        });
-
-        const ocrResult = await new Promise((resolve, reject) => {
-            pythonProcess.on('close', (code) => {
-                if (code === 0) {
-                    try {
-                        const output = JSON.parse(scriptOutput.trim());
-                        if (output.message === "Berhasil" && output.nutrition_info) {
-                            resolve(output.nutrition_info);
-                        } else {
-                            reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
-                        }
-                    } catch (error) {
-                        console.error("Raw script output:", scriptOutput);
-                        reject(new Error('Failed to parse script output as JSON.'));
-                    }
-                } else {
-                    reject(new Error('Python script exited with error'));
-                }
-            });
-        });
-
-        console.log("OCR Result:", ocrResult);
-
-        // Retrieve user data from database
-        const [userRows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
-        if (userRows.length === 0) {
-            throw new Error('User data not found');
-        }
-
-        const { age, bb } = userRows[0];
-        console.log("User Data:", { age, bb });
-
-        // Combine OCR and database inputs for the model
-        const modelInput = {
-            sajian_per_kemasan: ocrResult["Sajian per kemasan"],
-            sugars: parseFloat(ocrResult["Sugars"].replace(/[^\d.]/g, '')), // Extract numeric value from "12g"
-            total_sugars: parseFloat(ocrResult["Total Sugar"].replace(/[^\d.]/g, '')), // Extract numeric value
-            age: parseInt(age, 10),
-            bb: parseFloat(bb),
-        };
-
-        console.log("Model Input:", modelInput);
-
-        // Load and run TensorFlow model
-        const modelPath = path.join(__dirname, '../model');
-        const model = await tf.node.loadSavedModel(modelPath); // Load model as SavedModel format.
-
-        // Prepare input for the model
-        const inputTensor = tf.tensor2d(
-            [[modelInput.sajian_per_kemasan, modelInput.sugars, modelInput.total_sugars, modelInput.age, modelInput.bb]],
-            [1, 5]
-        );
-
-        const prediction = model.predict(inputTensor);
-        const predictionArray = Array.from(prediction.dataSync());
-
-        console.log("Model Prediction:", predictionArray);
-
-        // Construct the final response
-        return h.response({
-            status: 'success',
-            message: 'Photo processed successfully',
-            data: {
-                nutrition_analysis: predictionArray,
-            },
-        }).code(200);
+        const output = JSON.parse(scriptOutput.trim());
+        return h.response(output).code(200);
     } catch (error) {
-        console.error('Error processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: `Failed to process photo: ${error.message}`,
+            message: `Failed to process: ${error.message}`,
         }).code(500);
     }
 };
+
 
 // Ekspor semua handler
 module.exports = {
