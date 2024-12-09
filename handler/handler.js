@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
 
 // Fungsi untuk menghasilkan SHA-256 hash
 function generateUniqueId(email) {
