@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
-
+        logging.info("Teks setelah dibersihkan:\n%s", extracted_text)
         # Cek hasil dan output JSON ke stdout
         if not nutrition_info:
             response = {"message": "Tidak ditemukan", "nutrition_info": {}}
