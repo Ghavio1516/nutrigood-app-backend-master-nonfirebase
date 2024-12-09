@@ -66,6 +66,7 @@ def parse_nutrition_info(extracted_text):
 
     # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     serving_count = int(nutrition_data.get("Sajian per kemasan", 1))
+    nutrition_data["Sajian per kemasan"] = serving_count
 
     # Hitung Total Sugar jika tersedia
     sugar_value = nutrition_data.get("Sugars")
