@@ -54,20 +54,18 @@ def extract_text_from_image(image_path):
 # Parsing teks hasil OCR
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
-
-    # Pola pencarian regex
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
     patterns = {
-        'Sajian per kemasan': rf'(\d+)\s*(?:{serving_pattern})|(?:{serving_pattern})[:\-\s]*(\d+)',
+        'Sajian per kemasan': rf'({serving_pattern})[:\-\s]*(\d+)',
         'Sugars': rf'({sugar_pattern})[:\-\s]*(\d+\s*[gG]|mg)'
     }
 
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
-            found_value = match.group(1) or match.group(2)
+            found_value = match.group(2)
             if found_value:
                 nutrition_data[key] = found_value.strip()
                 logging.info(f"{key} ditemukan: {nutrition_data[key]}")
@@ -76,16 +74,19 @@ def parse_nutrition_info(extracted_text):
         else:
             logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
 
-    # Tetapkan nilai default jika tidak ditemukan
+    # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     serving_count = int(nutrition_data.get("Sajian per kemasan", 1))
     nutrition_data["Sajian per kemasan"] = serving_count
 
     # Hitung Total Sugar jika tersedia
     sugar_value = nutrition_data.get("Sugars")
     if sugar_value:
-        sugar_value = float(re.search(r"[\d.]+", sugar_value).group())
-        nutrition_data["Total Sugar"] = f"{sugar_value * serving_count:.2f} g"
-        logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
+        try:
+            sugar_amount = float(re.search(r"[\d.]+", sugar_value).group())
+            nutrition_data["Total Sugar"] = f"{sugar_amount * serving_count:.2f} g"
+            logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
+        except AttributeError:
+            logging.error("Tidak dapat menghitung Total Sugar karena nilai gula tidak valid.")
 
     return nutrition_data
 
