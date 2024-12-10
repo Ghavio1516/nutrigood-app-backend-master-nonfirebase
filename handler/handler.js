@@ -281,6 +281,8 @@ const path = require('path');
 const tf = require('@tensorflow/tfjs-node');
 const sharp = require('sharp');
 const mobilenet = require('@tensorflow-models/mobilenet');
+const { createCanvas, loadImage } = require('canvas');
+const Ocr = require('@paddle-js-models/ocr');
 
 // Fungsi Ekstraksi Teks Sederhana
 const extractTextFromImage = async (imageBuffer) => {
@@ -315,6 +317,7 @@ const uploadPhotoHandler = async (request, h) => {
     const { base64Image } = request.payload;
 
     if (!base64Image) {
+        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -324,61 +327,57 @@ const uploadPhotoHandler = async (request, h) => {
     try {
         console.log("Starting photo upload and processing...");
 
-        // Decode Base64 dan Simpan Gambar
+        // Decode Base64 and save image
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
-        // Tentukan Direktori Simpan
         const savedFolder = path.join(__dirname, '../saved_photos');
-        if (!fs.existsSync(savedFolder)) fs.mkdirSync(savedFolder, { recursive: true });
+        if (!fs.existsSync(savedFolder)) {
+            console.log("Creating saved_photos directory...");
+            fs.mkdirSync(savedFolder, { recursive: true });
+        }
 
-        // Tentukan Nama File Unik
-        const finalFileName = `${userId}_${Date.now()}.jpg`;
+        const now = new Date();
+        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
+        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
+        const finalFileName = `${userId}_${time}-${date}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
+
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
 
-        // Proses OCR untuk Ekstraksi Teks
-        const textResult = await extractTextFromImage(buffer);
-        console.log("OCR Result:", textResult);
+        // Load the image using node-canvas
+        const image = await loadImage(filePath);
+        const canvas = createCanvas(image.width, image.height);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
 
-        // Parsing Teks Hasil OCR
-        const sugarMatch = textResult.match(/Sugars[:\-\s]*(\d+)\s*[gG]/i);
-        const servingMatch = textResult.match(/Sajian per kemasan[:\-\s]*(\d+)/i);
+        // Initialize the OCR model
+        const ocr = await Ocr.create();
 
-        if (!sugarMatch || !servingMatch) {
-            return h.response({
-                status: 'fail',
-                message: 'Nutrition information not found',
-            }).code(400);
-        }
+        // Perform OCR detection
+        const result = await ocr.detect(canvas);
 
-        const sugars = parseFloat(sugarMatch[1]);
-        const serving = parseInt(servingMatch[1]);
-        const totalSugars = sugars * serving;
+        // Extract recognized text
+        const extractedText = result.map(line => line.text).join('\n');
+        console.log("Extracted Text:", extractedText);
 
-        const modelInput = normalizeInput([serving, sugars, totalSugars]);
-        console.log("Normalized Model Input:", modelInput);
+        // Here you can implement your logic to parse the extracted text
+        // and perform any additional processing as needed.
 
-        // Prediksi dengan Model TensorFlow.js
-        const prediction = await predictNutrition(modelInput);
-        console.log("Model Prediction:", prediction);
-
-        // Kirim Respons
         return h.response({
             status: 'success',
-            message: 'Photo processed successfully',
+            message: 'Photo uploaded and processed successfully',
             data: {
-                message: 'Berhasil',
-                nutrition_info: { Sugars: sugars, "Sajian per kemasan": serving, "Total Sugar": totalSugars },
-                prediction,
+                extractedText,
+                // Include any additional data you want to return
             },
         }).code(201);
     } catch (error) {
         console.error('Error uploading and processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: `Failed to upload and process photo: ${error.message}`,
+            message: 'Failed to upload and process photo',
         }).code(500);
     }
 };
