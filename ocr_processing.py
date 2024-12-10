@@ -86,8 +86,7 @@ def parse_nutrition_info(extracted_text):
     sugar_value = nutrition_data.get("Sugars")
     if sugar_value:
         try:
-            # Remove non-numeric characters like "g" and convert to float
-            sugar_amount = float(re.sub(r'[^\d.]+', '', sugar_value))  # Removes any character that isn't a number or dot
+            sugar_amount = float(re.search(r"[\d.]+", sugar_value).group())
             nutrition_data["Total Sugar"] = f"{sugar_amount * serving_count:.2f} g"
             logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
         except AttributeError:
