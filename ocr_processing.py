@@ -108,41 +108,16 @@ def analyze_with_model(nutrition_info, model_path):
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
         logging.info(f"Input data: {input_data}")
 
-        # Debugging input data
-        #print("Detail Input Data ke Model:")
-        #print(f"Shape: {input_data.shape}")
-        #print(input_data)
-
         # Prediksi
         predictions = model.predict(input_data)
-        logging.info(f"Raw predictions: {predictions}")
-
-        # Pastikan predictions adalah numpy array
-        if isinstance(predictions, list):
-            predictions = np.array(predictions)
-            logging.info(f"Predictions converted to numpy array: {predictions}")
-
-        # Debugging output predictions
-        #print(f"Predictions Shape: {predictions.shape}")
-        #print(f"Predictions Content: {predictions}")
-
-        # Tangani dimensi tambahan
         predictions = np.squeeze(predictions)  # Hilangkan dimensi tambahan
-        #print(f"Predictions after squeeze: {predictions.shape}")
-        #print(predictions)
+        logging.info(f"Predictions after squeeze: {predictions}")
 
-        # Pilih batch pertama jika output adalah batch
-        if predictions.ndim == 3:
-            predictions = predictions[0]  # Ambil batch pertama
-        elif predictions.ndim == 2:
-            predictions = predictions[0]  # Ambil baris pertama dari batch
-
-        # Validasi prediksi
         if predictions.shape[0] >= 2:
             pred_kategori_gula = predictions[0]
             pred_rekomendasi = predictions[1]
         else:
-            raise ValueError(f"Unexpected model output shape after processing: {predictions.shape}")
+            raise ValueError(f"Unexpected model output shape: {predictions.shape}")
 
         kategori_gula = "Tinggi Gula" if pred_kategori_gula > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if pred_rekomendasi > 0.5 else "Aman Dikonsumsi"
@@ -182,17 +157,18 @@ if __name__ == "__main__":
                 "nutrition_info": nutrition_info,
                 "analysis": analysis_result,
             }
+
+        # Tambahkan prefix Output :
         try:
-            output = json.dumps(response, indent=4)
+            output = f"Output : {json.dumps(response, indent=4)}"
             print(output)
         except Exception as e:
             logging.error(f"Failed to serialize response: {str(e)}")
-            print(json.dumps({"message": "Error serializing JSON"}, indent=4))
+            print(f"Output : {json.dumps({'message': 'Error serializing JSON'}, indent=4)}")
             sys.exit(1)
-        # Cetak JSON hasil ke stdout
 
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}, "analysis": {}}
-        print(json.dumps(response, indent=4))
+        print(f"Output : {json.dumps(response, indent=4)}")
         sys.exit(1)
