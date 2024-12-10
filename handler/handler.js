@@ -334,7 +334,11 @@ const uploadPhotoHandler = async (request, h) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        const output = JSON.parse(scriptOutput.trim());
+                        // Ambil hanya baris terakhir JSON
+                        const lines = scriptOutput.trim().split('\n');
+                        const jsonOutput = lines[lines.length - 1];
+                        const output = JSON.parse(jsonOutput);
+        
                         if (output.message === "Tidak ditemukan") {
                             resolve({
                                 message: "Tidak ditemukan",
@@ -344,6 +348,7 @@ const uploadPhotoHandler = async (request, h) => {
                             resolve({
                                 message: "Berhasil",
                                 nutrition_info: output.nutrition_info,
+                                analysis: output.analysis,
                             });
                         } else {
                             reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));

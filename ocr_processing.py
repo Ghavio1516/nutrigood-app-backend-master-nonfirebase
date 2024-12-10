@@ -105,18 +105,21 @@ def parse_nutrition_info(extracted_text):
 # Fungsi untuk memuat model TensorFlow.js dan membuat prediksi
 def analyze_with_model(nutrition_info, model_path):
     try:
-        # Muat model dari file .h5
+        # Load model dari file .h5
         model = tf.keras.models.load_model(model_path)
         logging.info("Model .h5 berhasil dimuat.")
 
         # Siapkan input untuk prediksi
         serving_per_package = float(nutrition_info.get("Sajian per kemasan", 0))
         sugar = float(re.search(r"[\d.]+", nutrition_info.get("Sugars", "0")).group())
-        total_sugar = nutrition_info.get("Total Sugar", 0)
+        total_sugar = float(nutrition_info.get("Total Sugar", 0))
 
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
         predictions = model.predict(input_data)
 
+        logging.info(f"Predictions: {predictions}")
+
+        # Gunakan a.any() atau a.all() untuk evaluasi prediksi
         kategori_gula = "Tinggi Gula" if predictions[0][0] > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if predictions[0][1] > 0.5 else "Aman Dikonsumsi"
 
