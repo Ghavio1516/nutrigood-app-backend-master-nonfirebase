@@ -361,6 +361,7 @@ const uploadPhotoHandler = async (request, h) => {
             filePath,
             message: result.message,
             nutrition_info: result.nutrition_info,
+            analysis: result.analysis_result,
         });
 
         return h.response({
@@ -369,6 +370,7 @@ const uploadPhotoHandler = async (request, h) => {
             data: {
                 message: result.message,
                 nutrition_info: result.nutrition_info,
+                analysis: result.analysis_result,
             },
         }).code(201);
     } catch (error) {
