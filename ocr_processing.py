@@ -117,7 +117,6 @@ def analyze_with_model(nutrition_info, model_path):
         # Prediksi
         # Normalisasi jika dibutuhkan
         input_data_normalized = input_data / np.max(input_data, axis=0)
-        new_data = new_data / np.max(X, axis=0)  # Normalisasi
         print(f"Input Normalized: {input_data_normalized}")
         predictions = model.predict(input_data_normalized)
 
