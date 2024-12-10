@@ -57,7 +57,6 @@ def extract_text_from_image(image_path):
 def parse_nutrition_info(extracted_text):
     nutrition_data = {}
     
-    # Pola pencarian dengan Regex
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
@@ -66,7 +65,6 @@ def parse_nutrition_info(extracted_text):
         'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
     }
 
-    # Ekstrak data nutrisi berdasarkan pola
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
@@ -83,40 +81,53 @@ def parse_nutrition_info(extracted_text):
         else:
             logging.warning(f"Tidak ditemukan data untuk {key}.")
 
-    # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
-    serving_count = int(nutrition_data.get("Sajian per kemasan", 1))
-    if "Sajian per kemasan" not in nutrition_data:
+    # Tetapkan nilai default hanya untuk "Sajian per kemasan"
+    if "Sajian per kemasan" not in nutrition_data or nutrition_data["Sajian per kemasan"] is None:
         logging.warning("Sajian per kemasan tidak ditemukan! Menggunakan nilai default 1.")
-        nutrition_data["Sajian per kemasan"] = serving_count
+        nutrition_data["Sajian per kemasan"] = 1
 
-    # Hitung Total Sugar jika ditemukan
-    if "Sugars" in nutrition_data:
-        try:
-            sugar_value = float(re.search(r"[\d.]+", nutrition_data["Sugars"]).group())
-            nutrition_data["Total Sugar"] = f"{sugar_value * serving_count:.2f} g"
-            logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
-        except (ValueError, AttributeError):
-            logging.error("Tidak dapat menghitung Total Sugar.")
+    # Periksa apakah Sugars ditemukan
+    if not nutrition_data.get("Sugars"):
+        logging.error("Sugars tidak ditemukan dalam teks hasil OCR.")
+        raise ValueError("Sugars tidak ditemukan. Tidak dapat melanjutkan proses.")
+
+    # Hitung Total Sugar
+    try:
+        sugar_value = float(re.search(r"[\d.]+", nutrition_data["Sugars"]).group())
+        serving_count = int(nutrition_data["Sajian per kemasan"])
+        nutrition_data["Total Sugar"] = f"{sugar_value * serving_count:.2f} g"
+        logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
+    except (ValueError, AttributeError):
+        logging.error("Tidak dapat menghitung Total Sugar.")
+        raise ValueError("Total Sugar tidak dapat dihitung. Tidak dapat melanjutkan proses.")
 
     return nutrition_data
 
-# Fungsi untuk prediksi model TensorFlow
+# Prediksi model TensorFlow
 def predict_nutrition_category(nutrition_data):
     model_path = './model/analisis-nutrisi.h5'
     model = tf.keras.models.load_model(model_path)
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-    # Bersihkan dan konversi input sebelum dimasukkan ke TensorFlow
+    # Fungsi untuk membersihkan nilai nutrisi
+    def clean_float(value):
+        try:
+            return float(re.sub(r'[^\d.]+', '', value))
+        except ValueError:
+            raise ValueError(f"Gagal konversi nilai input: {value}")
+
+    # Bersihkan input data sebelum digunakan
     try:
-        serving_per_container = float(nutrition_data["Sajian per kemasan"])
-        sugars = float(nutrition_data["Sugars"].replace(" g", "").replace("mg", "").strip())
-        total_sugar = float(nutrition_data["Total Sugar"].replace(" g", "").replace("mg", "").strip())
+        serving_per_container = clean_float(nutrition_data["Sajian per kemasan"])
+        sugars = clean_float(nutrition_data["Sugars"])
+        total_sugar = clean_float(nutrition_data["Total Sugar"])
     except ValueError as e:
         raise ValueError(f"Gagal konversi nilai input: {e}")
 
     # Konversi data menjadi Tensor
     input_tensor = tf.convert_to_tensor([[serving_per_container, sugars, total_sugar]])
 
-    # Prediksi
+    # Prediksi menggunakan model
     predictions = model.predict(input_tensor)[0]
     return {
         "Kategori Gula": "Tinggi" if predictions[0] > 0.5 else "Rendah",
@@ -126,33 +137,20 @@ def predict_nutrition_category(nutrition_data):
 # Fungsi utama
 if __name__ == "__main__":
     try:
-        # Path gambar dari argumen
         image_path = sys.argv[1]
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
-
-        logging.info(f"Memproses gambar: {image_path}")
-
-        # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
-
-        # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
 
         # Jika parsing berhasil, jalankan prediksi
-        if nutrition_info:
+        if "Sugars" in nutrition_info and "Total Sugar" in nutrition_info:
             predictions = predict_nutrition_category(nutrition_info)
             nutrition_info.update(predictions)
             response = {"message": "Berhasil", "nutrition_info": nutrition_info}
         else:
-            response = {"message": "Tidak ditemukan", "nutrition_info": {}}
+            response = {"message": "Data nutrisi tidak lengkap. Tidak dapat melanjutkan proses.", "nutrition_info": {}}
 
-        # Cetak JSON hanya ke stdout
         print(json.dumps(response, indent=4))
 
     except Exception as e:
         logging.error(f"Error: {str(e)}")
-        response = {"message": "Error", "nutrition_info": {}}
-        print(json.dumps(response, indent=4))
-        sys.exit(1)
+        print(json.dumps({"message": f"Error: {str(e)}", "nutrition_info": {}}, indent=4))
