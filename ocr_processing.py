@@ -38,8 +38,7 @@ def extract_text_from_image(image_path):
     full_text = "\n".join([line[1][0] for line in results[0]])
 
     if full_text.strip():
-        #logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
-        print(f"Teks hasil OCR:\n{full_text.strip()}")
+        logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
     else:
         logging.warning("Teks hasil OCR kosong.")
     
@@ -110,15 +109,15 @@ def analyze_with_model(nutrition_info, model_path):
         logging.info(f"Input data: {input_data}")
 
         # Debugging input data
-        #print("Detail Input Data ke Model:")
-        #print(f"Shape: {input_data.shape}")
-        #print(input_data)
-        #print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
+        print("Detail Input Data ke Model:")
+        print(f"Shape: {input_data.shape}")
+        print(input_data)
+        print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
 
         # Prediksi
         # Normalisasi jika dibutuhkan
         input_data_normalized = input_data / np.max(input_data, axis=0)
-        #print(f"Input Normalized: {input_data_normalized}")
+        print(f"Input Normalized: {input_data_normalized}")
         predictions = model.predict(input_data_normalized)
 
         #predictions = model.predict(input_data)
