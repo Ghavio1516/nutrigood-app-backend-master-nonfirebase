@@ -2,6 +2,7 @@ const data = require('../database/database');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const tf = require('@tensorflow/tfjs-node');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -128,6 +129,7 @@ const getTodayProductsHandler = async (request, h) => {
     }
 };
 
+// Handler untuk registrasi user
 // Handler untuk registrasi user
 const registerUserHandler = async (request, h) => {
     const { email, password, name, age, diabetes, bb } = request.payload;
@@ -277,77 +279,122 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
-
-const uploadPhotoHandler = async (request, h) => {
-    const { userId } = request.auth;
-    const { base64Image } = request.payload;
-
-    if (!base64Image || !base64Image.startsWith('data:image/')) {
-        return h.response({
-            status: 'fail',
-            message: 'Invalid or missing base64Image',
-        }).code(400);
-    }
-
-    const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
+// Fungsi untuk memuat model dan membuat prediksi
+async function analyzeNutritionData(nutritionData) {
     const modelPath = path.join(__dirname, '../model/analisis-nutrisi.h5');
+    const model = await tf.loadLayersModel(`file://${modelPath}`);
 
-    try {
-        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
-        fs.writeFileSync(filePath, buffer);
+    // Konversi input menjadi Tensor
+    const inputTensor = tf.tensor2d([
+        [
+            nutritionData['Sajian per kemasan'],
+            parseFloat(nutritionData['Sugars'].replace(/[^\d.]/g, '')),
+            parseFloat(nutritionData['Total Sugar'].replace(/[^\d.]/g, ''))
+        ]
+    ]);
 
-        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, modelPath]);
+    // Buat prediksi
+    const prediction = model.predict(inputTensor).arraySync()[0];
+    return {
+        "Kategori Gula": prediction[0] > 0.5 ? "Tinggi" : "Rendah",
+        "Rekomendasi": prediction[1] > 0.5 ? "Kurangi konsumsi" : "Aman dikonsumsi"
+    };
+}
 
-        let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => {
-            scriptOutput += data.toString();
-        });
+    const uploadPhotoHandler = async (request, h) => {
+        const { userId } = request.auth;
+        const { base64Image } = request.payload;
 
-        pythonProcess.stderr.on('data', (data) => {
-            console.error(`Error in Python script: ${data}`);
-        });
-
-        await new Promise((resolve, reject) => {
-            pythonProcess.on('close', (code) => {
-                if (code === 0) {
-                    resolve();
-                } else {
-                    reject(new Error(`Python script exited with code ${code}`));
-                }
-            });
-        });
-
-        const output = scriptOutput.trim();
-        if (!output.startsWith('{') || !output.endsWith('}')) {
-            throw new Error('Invalid JSON output from Python script');
-        }
-        const parsedOutput = JSON.parse(output);
-
-        if (parsedOutput.message === 'Error') {
+        if (!base64Image) {
             return h.response({
                 status: 'fail',
-                message: 'Failed to analyze nutrition data',
+                message: 'Missing base64Image',
+            }).code(400);
+        }
+
+        try {
+            // Decode Base64 dan simpan gambar
+            const base64Data = base64Image.split(',')[1];
+            const buffer = Buffer.from(base64Data, 'base64');
+
+            const savedFolder = path.join(__dirname, '../saved_photos');
+            if (!fs.existsSync(savedFolder)) {
+                fs.mkdirSync(savedFolder, { recursive: true });
+            }
+
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
+            const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
+            const finalFileName = `${userId}_${time}-${date}.jpg`;
+            const filePath = path.join(savedFolder, finalFileName);
+
+            fs.writeFileSync(filePath, buffer);
+
+            // Jalankan script OCR
+            const scriptPath = path.join(__dirname, '../ocr_processing.py');
+            const pythonProcess = spawn('python3', [scriptPath, filePath]);
+
+            let scriptOutput = '';
+            pythonProcess.stdout.on('data', (data) => {
+                scriptOutput += data.toString();
+            });
+
+            pythonProcess.stderr.on('data', (data) => {
+                console.error(`Python stderr: ${data.toString()}`);
+            });
+
+            const result = await new Promise((resolve, reject) => {
+                pythonProcess.on('close', (code) => {
+                    if (code === 0) {
+                        try {
+                            const output = JSON.parse(scriptOutput.trim());
+                            if (!output.nutrition_info || Object.keys(output.nutrition_info).length === 0) {
+                                resolve({
+                                    message: "Tidak ditemukan",
+                                    nutrition_info: null,
+                                });
+                            } else {
+                                resolve(output.nutrition_info);
+                            }
+                        } catch (error) {
+                            console.error("Failed to parse script output as JSON.");
+                            reject(new Error('Failed to parse script output.'));
+                        }
+                    } else {
+                        reject(new Error('Python script exited with error'));
+                    }
+                });
+            });
+
+            if (!result || result.message === "Tidak ditemukan") {
+                return h.response({
+                    status: 'fail',
+                    message: 'Nutrition info not found',
+                    data: null,
+                }).code(404);
+            }
+
+            // Panggil model TensorFlow
+            const prediction = await analyzeNutritionData(result);
+
+            // Kirim data ke user
+            return h.response({
+                status: 'success',
+                message: 'Photo uploaded and processed successfully',
+                data: {
+                    ...result,
+                    ...prediction,
+                },
+            }).code(201);
+
+        } catch (error) {
+            console.error('Error processing photo:', error.message);
+            return h.response({
+                status: 'fail',
+                message: 'Failed to process photo',
             }).code(500);
         }
-
-        return h.response({
-            status: 'success',
-            data: parsedOutput,
-        }).code(200);
-    } catch (error) {
-        console.error(`Error in uploadPhotoHandler: ${error.message}`);
-        return h.response({
-            status: 'fail',
-            message: `Failed to process: ${error.message}`,
-        }).code(500);
-    } finally {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-    }
-};
-
-
+    };
 
 
 // Ekspor semua handler
