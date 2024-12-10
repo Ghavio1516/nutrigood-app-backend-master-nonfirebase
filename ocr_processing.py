@@ -106,26 +106,37 @@ def parse_nutrition_info(extracted_text):
 # Fungsi untuk memuat model TensorFlow.js dan membuat prediksi
 def analyze_with_model(nutrition_info, model_path):
     try:
+        # Muat model
         model = tf.keras.models.load_model(model_path)
         logging.info("Model berhasil dimuat.")
 
+        # Siapkan input
         serving_per_package = float(nutrition_info.get("Sajian per kemasan", 0))
         sugar = float(re.search(r"[\d.]+", nutrition_info.get("Sugars", "0")).group())
         total_sugar = float(nutrition_info.get("Total Sugar", 0))
 
+        # Normalisasi input
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
         logging.info(f"Input data: {input_data}")
 
         # Lakukan prediksi
         predictions = model.predict(input_data)
-        logging.info(f"Predictions: {predictions}")
+        logging.info(f"Predictions raw output: {predictions}")
 
-        # Pastikan prediksi dikonversi menjadi scalar jika array
-        pred_kategori_gula = predictions[0][0]
-        pred_rekomendasi = predictions[0][1]
+        # Periksa bentuk output
+        if predictions.ndim == 2 and predictions.shape[1] >= 2:
+            pred_kategori_gula = predictions[0][0]
+            pred_rekomendasi = predictions[0][1]
+        elif predictions.ndim == 1 and predictions.shape[0] >= 1:
+            pred_kategori_gula = predictions[0]
+            pred_rekomendasi = None  # Tidak ada indeks kedua
+        else:
+            raise ValueError("Model tidak memberikan output yang diharapkan.")
 
         kategori_gula = "Tinggi Gula" if float(pred_kategori_gula) > 0.5 else "Rendah Gula"
-        rekomendasi = "Kurangi Konsumsi" if float(pred_rekomendasi) > 0.5 else "Aman Dikonsumsi"
+        rekomendasi = (
+            "Kurangi Konsumsi" if pred_rekomendasi and float(pred_rekomendasi) > 0.5 else "Aman Dikonsumsi"
+        )
 
         return {
             "Kategori Gula": kategori_gula,
@@ -141,7 +152,7 @@ if __name__ == "__main__":
     try:
         # Path gambar dan model
         image_path = sys.argv[1]
-        model_path = "./model/analisis-nutrisi.h5"
+        model_path = "./model/model_3Variabel_fix.h5"
 
         # Membaca gambar dari path
         image = cv2.imread(image_path)
