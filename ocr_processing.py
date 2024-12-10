@@ -108,41 +108,17 @@ def analyze_with_model(nutrition_info, model_path):
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
         logging.info(f"Input data: {input_data}")
 
-        # Debugging input data
-        #print("Detail Input Data ke Model:")
-        #print(f"Shape: {input_data.shape}")
-        #print(input_data)
-
         # Prediksi
         predictions = model.predict(input_data)
         logging.info(f"Raw predictions: {predictions}")
 
-        # Pastikan predictions adalah numpy array
-        if isinstance(predictions, list):
-            predictions = np.array(predictions)
-            logging.info(f"Predictions converted to numpy array: {predictions}")
-
-        # Debugging output predictions
-        #print(f"Predictions Shape: {predictions.shape}")
-        #print(f"Predictions Content: {predictions}")
-
-        # Tangani dimensi tambahan
-        predictions = np.squeeze(predictions)  # Hilangkan dimensi tambahan
-        #print(f"Predictions after squeeze: {predictions.shape}")
-        #print(predictions)
-
-        # Pilih batch pertama jika output adalah batch
-        if predictions.ndim == 3:
-            predictions = predictions[0]  # Ambil batch pertama
-        elif predictions.ndim == 2:
-            predictions = predictions[0]  # Ambil baris pertama dari batch
-
-        # Validasi prediksi
-        if predictions.shape[0] >= 2:
+        # Tangani prediksi
+        predictions = np.squeeze(predictions)
+        if predictions.ndim == 1 and len(predictions) >= 2:
             pred_kategori_gula = predictions[0]
             pred_rekomendasi = predictions[1]
         else:
-            raise ValueError(f"Unexpected model output shape after processing: {predictions.shape}")
+            raise ValueError(f"Unexpected model output shape: {predictions.shape}")
 
         kategori_gula = "Tinggi Gula" if pred_kategori_gula > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if pred_rekomendasi > 0.5 else "Aman Dikonsumsi"
@@ -159,34 +135,26 @@ def analyze_with_model(nutrition_info, model_path):
 # Fungsi utama
 if __name__ == "__main__":
     try:
-        # Path gambar dan model
         image_path = sys.argv[1]
         model_path = "./model/model_3Variabel_fix.h5"
 
-        # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
-
-        # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
 
-        # Validasi apakah informasi nutrisi ditemukan
         if not nutrition_info:
             response = {"message": "Tidak ditemukan", "nutrition_info": {}, "analysis": {}}
         else:
-            # Analisis menggunakan model TensorFlow
             analysis_result = analyze_with_model(nutrition_info, model_path)
-
-            # Respons akhir
             response = {
                 "message": "Berhasil",
                 "nutrition_info": nutrition_info,
                 "analysis": analysis_result,
             }
-        # Cetak hanya JSON valid ke stdout
-        print(json.dumps(response, indent=4))
-        sys.stdout.flush()  # Pastikan stdout bersih untuk JSON
+
+        print("Output :", json.dumps(response, indent=4))
+
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}, "analysis": {}}
-        print(json.dumps(response, indent=4))
+        print("Output :", json.dumps(response, indent=4))
         sys.exit(1)

@@ -334,15 +334,16 @@ const uploadPhotoHandler = async (request, h) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        // Debugging: log raw output
+                        // Log raw Python script output
                         console.log("Raw Python script output:", scriptOutput);
         
-                        // Ambil hanya blok JSON terakhir
-                        const jsonStart = scriptOutput.lastIndexOf("{");
-                        if (jsonStart === -1) throw new Error("No JSON found in script output");
-                        
-                        const cleanOutput = scriptOutput.slice(jsonStart).trim();
-                        const output = JSON.parse(cleanOutput);
+                        // Cari prefix "Output :" dan ambil JSON setelahnya
+                        const prefix = "Output :";
+                        const outputIndex = scriptOutput.indexOf(prefix);
+                        if (outputIndex === -1) throw new Error("No valid output found in script output");
+        
+                        const jsonString = scriptOutput.slice(outputIndex + prefix.length).trim();
+                        const output = JSON.parse(jsonString);
         
                         resolve(output);
                     } catch (error) {
@@ -353,8 +354,8 @@ const uploadPhotoHandler = async (request, h) => {
                     reject(new Error("Python script exited with error"));
                 }
             });
-        });        
-
+        });
+        
         // Log the final response data
         console.log("Final response data sent to client:", {
             filePath,
