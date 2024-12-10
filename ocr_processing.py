@@ -109,7 +109,6 @@ def analyze_with_model(nutrition_info, model_path):
         model = tf.keras.models.load_model(model_path)
         logging.info("Model berhasil dimuat.")
 
-        # Siapkan input
         serving_per_package = float(nutrition_info.get("Sajian per kemasan", 0))
         sugar = float(re.search(r"[\d.]+", nutrition_info.get("Sugars", "0")).group())
         total_sugar = float(nutrition_info.get("Total Sugar", 0))
@@ -121,9 +120,12 @@ def analyze_with_model(nutrition_info, model_path):
         predictions = model.predict(input_data)
         logging.info(f"Predictions: {predictions}")
 
-        # Evaluasi hasil prediksi
-        kategori_gula = "Tinggi Gula" if predictions[0][0] > 0.5 else "Rendah Gula"
-        rekomendasi = "Kurangi Konsumsi" if predictions[0][1] > 0.5 else "Aman Dikonsumsi"
+        # Pastikan prediksi dikonversi menjadi scalar jika array
+        pred_kategori_gula = predictions[0][0]
+        pred_rekomendasi = predictions[0][1]
+
+        kategori_gula = "Tinggi Gula" if float(pred_kategori_gula) > 0.5 else "Rendah Gula"
+        rekomendasi = "Kurangi Konsumsi" if float(pred_rekomendasi) > 0.5 else "Aman Dikonsumsi"
 
         return {
             "Kategori Gula": kategori_gula,
@@ -132,7 +134,7 @@ def analyze_with_model(nutrition_info, model_path):
 
     except Exception as e:
         logging.error(f"Error during prediction: {str(e)}")
-        return {}
+        return {"error": "Terjadi kesalahan pada analisis model."}
 
 # Fungsi utama
 if __name__ == "__main__":
