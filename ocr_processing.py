@@ -1,3 +1,4 @@
+import os
 import cv2
 import re
 import json
@@ -5,6 +6,9 @@ import sys
 import logging
 import tensorflow as tf
 from paddleocr import PaddleOCR
+
+# Paksa TensorFlow hanya menggunakan CPU
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # Konfigurasi logging
 logging.basicConfig(
@@ -101,12 +105,16 @@ def predict_nutrition_category(nutrition_data):
     model_path = './model/analisis-nutrisi.h5'
     model = tf.keras.models.load_model(model_path)
 
+    # Bersihkan dan konversi input sebelum dimasukkan ke TensorFlow
+    try:
+        serving_per_container = float(nutrition_data["Sajian per kemasan"])
+        sugars = float(nutrition_data["Sugars"].replace(" g", "").replace("mg", "").strip())
+        total_sugar = float(nutrition_data["Total Sugar"].replace(" g", "").replace("mg", "").strip())
+    except ValueError as e:
+        raise ValueError(f"Gagal konversi nilai input: {e}")
+
     # Konversi data menjadi Tensor
-    input_tensor = tf.convert_to_tensor([[
-        nutrition_data["Sajian per kemasan"],
-        float(nutrition_data["Sugars"].replace(" g", "")),
-        float(nutrition_data["Total Sugar"].replace(" g", ""))
-    ]])
+    input_tensor = tf.convert_to_tensor([[serving_per_container, sugars, total_sugar]])
 
     # Prediksi
     predictions = model.predict(input_tensor)[0]
