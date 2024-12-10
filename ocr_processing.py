@@ -167,7 +167,7 @@ if __name__ == "__main__":
             response = {"message": "Tidak ditemukan", "nutrition_info": {}, "analysis": {}}
         else:
             # Analisis menggunakan model TensorFlow
-            analysis_result = analyze_with_model(   , model_path)
+            analysis_result = analyze_with_model(nutrition_info, model_path)
 
             # Respons akhir
             response = {
