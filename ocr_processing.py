@@ -112,12 +112,12 @@ def analyze_with_model(nutrition_info, model_path):
         #print("Detail Input Data ke Model:")
         #print(f"Shape: {input_data.shape}")
         #print(input_data)
-        print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
+        #print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
 
         # Prediksi
         # Normalisasi jika dibutuhkan
         input_data_normalized = input_data / np.max(input_data, axis=0)
-        print(f"Input Normalized: {input_data_normalized}")
+        #print(f"Input Normalized: {input_data_normalized}")
         predictions = model.predict(input_data_normalized)
 
         #predictions = model.predict(input_data)
@@ -152,8 +152,8 @@ def analyze_with_model(nutrition_info, model_path):
 
         kategori_gula = "Tinggi Gula" if pred_kategori_gula > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if pred_rekomendasi > 0.5 else "Aman Dikonsumsi"
-        print(f"Prediksi Kategori Gula: {pred_kategori_gula}")
-        print(f"Rekomendasi: {pred_rekomendasi}")
+        #print(f"Prediksi Kategori Gula: {pred_kategori_gula}")
+        #print(f"Rekomendasi: {pred_rekomendasi}")
         return {
             "Kategori Gula": kategori_gula,
             "Rekomendasi": rekomendasi
