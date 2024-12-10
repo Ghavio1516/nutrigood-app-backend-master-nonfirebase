@@ -3,6 +3,7 @@ import re
 import json
 import sys
 import logging
+import tensorflow as tf
 from paddleocr import PaddleOCR
 
 # Konfigurasi logging
@@ -65,7 +66,11 @@ def parse_nutrition_info(extracted_text):
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
         if match:
-            found_value = match.group(2)
+            if key == "Sajian per kemasan":
+                found_value = match.group(1) or match.group(4)
+            else:
+                found_value = match.group(2)
+
             if found_value:
                 nutrition_data[key] = found_value.strip()
                 logging.info(f"{key} ditemukan: {nutrition_data[key]}")
@@ -83,13 +88,32 @@ def parse_nutrition_info(extracted_text):
     # Hitung Total Sugar jika ditemukan
     if "Sugars" in nutrition_data:
         try:
-            sugar_value = float(nutrition_data["Sugars"])
+            sugar_value = float(re.search(r"[\d.]+", nutrition_data["Sugars"]).group())
             nutrition_data["Total Sugar"] = f"{sugar_value * serving_count:.2f} g"
             logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
-        except (ValueError, KeyError):
+        except (ValueError, AttributeError):
             logging.error("Tidak dapat menghitung Total Sugar.")
 
     return nutrition_data
+
+# Fungsi untuk prediksi model TensorFlow
+def predict_nutrition_category(nutrition_data):
+    model_path = './model/analisis-nutrisi.h5'
+    model = tf.keras.models.load_model(model_path)
+
+    # Konversi data menjadi Tensor
+    input_tensor = tf.convert_to_tensor([[
+        nutrition_data["Sajian per kemasan"],
+        float(nutrition_data["Sugars"].replace(" g", "")),
+        float(nutrition_data["Total Sugar"].replace(" g", ""))
+    ]])
+
+    # Prediksi
+    predictions = model.predict(input_tensor)[0]
+    return {
+        "Kategori Gula": "Tinggi" if predictions[0] > 0.5 else "Rendah",
+        "Rekomendasi": "Kurangi konsumsi" if predictions[1] > 0.5 else "Aman dikonsumsi"
+    }
 
 # Fungsi utama
 if __name__ == "__main__":
@@ -108,11 +132,13 @@ if __name__ == "__main__":
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
 
-        # Cek hasil dan output JSON ke stdout
-        if not nutrition_info:
-            response = {"message": "Tidak ditemukan", "nutrition_info": {}}
-        else:
+        # Jika parsing berhasil, jalankan prediksi
+        if nutrition_info:
+            predictions = predict_nutrition_category(nutrition_info)
+            nutrition_info.update(predictions)
             response = {"message": "Berhasil", "nutrition_info": nutrition_info}
+        else:
+            response = {"message": "Tidak ditemukan", "nutrition_info": {}}
 
         # Cetak JSON hanya ke stdout
         print(json.dumps(response, indent=4))
