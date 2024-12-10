@@ -121,7 +121,11 @@ def analyze_with_model(nutrition_info, model_path):
 
         # Lakukan prediksi
         predictions = model.predict(input_data)
-        logging.info(f"Predictions raw output: {predictions}")
+        logging.info(f"Predictions type: {type(predictions)}, content: {predictions}")
+
+        # Konversi ke numpy array jika predictions berupa list
+        if isinstance(predictions, list):
+            predictions = np.array(predictions)
 
         # Periksa bentuk output
         if predictions.ndim == 2 and predictions.shape[1] >= 2:
@@ -132,6 +136,9 @@ def analyze_with_model(nutrition_info, model_path):
             pred_rekomendasi = None  # Tidak ada indeks kedua
         else:
             raise ValueError("Model tidak memberikan output yang diharapkan.")
+        
+        logging.info(f"Model input data shape: {input_data.shape}")
+        logging.info(f"Model output raw predictions: {predictions}")
 
         kategori_gula = "Tinggi Gula" if float(pred_kategori_gula) > 0.5 else "Rendah Gula"
         rekomendasi = (
