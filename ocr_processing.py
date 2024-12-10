@@ -7,7 +7,7 @@ import re
 import sys
 
 # Konfigurasi logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Inisialisasi PaddleOCR
 ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
@@ -146,7 +146,8 @@ def analyze_with_model(nutrition_info, model_path):
 
         kategori_gula = "Tinggi Gula" if pred_kategori_gula > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if pred_rekomendasi > 0.5 else "Aman Dikonsumsi"
-
+        print(f"Prediksi Kategori Gula: {kategori_gula}")
+        print(f"Rekomendasi: {rekomendasi}")
         return {
             "Kategori Gula": kategori_gula,
             "Rekomendasi": rekomendasi
@@ -168,7 +169,7 @@ if __name__ == "__main__":
 
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
-
+        
         # Validasi apakah informasi nutrisi ditemukan
         if not nutrition_info:
             response = {"message": "Tidak ditemukan", "nutrition_info": {}, "analysis": {}}
