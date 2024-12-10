@@ -86,7 +86,8 @@ def parse_nutrition_info(extracted_text):
     sugar_value = nutrition_data.get("Sugars")
     if sugar_value:
         try:
-            sugar_amount = float(re.search(r"[\d.]+", sugar_value).group())
+            # Remove non-numeric characters like "g" and convert to float
+            sugar_amount = float(re.sub(r'[^\d.]+', '', sugar_value))  # Removes any character that isn't a number or dot
             nutrition_data["Total Sugar"] = f"{sugar_amount * serving_count:.2f} g"
             logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
         except AttributeError:
@@ -166,7 +167,7 @@ if __name__ == "__main__":
             response = {"message": "Tidak ditemukan", "nutrition_info": {}, "analysis": {}}
         else:
             # Analisis menggunakan model TensorFlow
-            analysis_result = analyze_with_model(nutrition_info, model_path)
+            analysis_result = analyze_with_model(   , model_path)
 
             # Respons akhir
             response = {
