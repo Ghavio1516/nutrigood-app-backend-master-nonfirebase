@@ -275,12 +275,11 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
+import fs from 'fs';
+import { spawn } from 'child_process';
+import path from 'path';
 
-// Handler untuk mengunggah dan memproses foto
-const uploadPhotoHandler = async (request, h) => {
+export const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
 
@@ -295,35 +294,60 @@ const uploadPhotoHandler = async (request, h) => {
         const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
         const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
-    
+
+        console.log(`Image saved at: ${filePath}`);
+
+        // Ambil data pengguna dari database
         const [rows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
         if (rows.length === 0) throw new Error('User not found');
-    
-        // Ambil data pengguna dari hasil query
-        const user = rows[0];
-        console.log("User ID: ", userId);
-        const { age, bb } = user;
-        console.log("Age:", age, "BB:", bb);
-    
-        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, age, bb]);
-    
+
+        const { age, bb } = rows[0];
+        console.log(`User Data - ID: ${userId}, Age: ${age}, BB: ${bb}`);
+
+        // Jalankan proses Python
+        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath]);
+
         let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
-        pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
-    
-        await new Promise((resolve, reject) => {
-            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
+        pythonProcess.stdout.on('data', (data) => {
+            scriptOutput += data.toString();
+            console.log(`Python stdout: ${data}`);
         });
-    
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error(`Python stderr: ${data}`);
+        });
+
+        await new Promise((resolve, reject) => {
+            pythonProcess.on('close', (code) => {
+                if (code === 0) {
+                    resolve();
+                } else {
+                    reject(new Error('Python script exited with error'));
+                }
+            });
+        });
+
+        console.log("Script output:", scriptOutput);
+
+        // Parse JSON output
         const output = JSON.parse(scriptOutput.trim());
-        return h.response(output).code(200);
+
+        if (!output || !output.message || !output.nutrition_info) {
+            throw new Error("Invalid output from Python script");
+        }
+
+        return h.response({
+            status: 'success',
+            message: output.message,
+            data: output.nutrition_info,
+        }).code(200);
     } catch (error) {
+        console.error('Error processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: `Failed to process: ${error.message}`,
+            message: `Failed to process photo: ${error.message}`,
         }).code(500);
     }
-    
 };
 
 
