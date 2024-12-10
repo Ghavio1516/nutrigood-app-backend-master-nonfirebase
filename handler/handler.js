@@ -127,6 +127,7 @@ const getTodayProductsHandler = async (request, h) => {
 };
 
 // Handler untuk registrasi user
+// Handler untuk registrasi user
 const registerUserHandler = async (request, h) => {
     const { email, password, name, age, diabetes, bb } = request.payload;
 
@@ -276,13 +277,15 @@ const loginUserHandler = async (request, h) => {
 };
 
 const fs = require('fs');
+const path = require('path');
 const { spawn } = require('child_process');
 
 const uploadPhotoHandler = async (request, h) => {
-    const { userId } = request.auth; // Mendapatkan ID pengguna dari autentikasi
-    const { base64Image } = request.payload; // Gambar dalam format Base64
+    const { userId } = request.auth;
+    const { base64Image } = request.payload;
 
     if (!base64Image) {
+        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -290,65 +293,91 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
-        console.log("Starting photo upload process...");
+        console.log("Starting photo upload and processing...");
 
-        // Decode Base64 dan simpan ke file sementara
-        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
-        const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
+        // Decode Base64 and save image
+        const base64Data = base64Image.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        const savedFolder = path.join(__dirname, '../saved_photos');
+        if (!fs.existsSync(savedFolder)) {
+            console.log("Creating saved_photos directory...");
+            fs.mkdirSync(savedFolder, { recursive: true });
+        }
+
+        const now = new Date();
+        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
+        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
+        const finalFileName = `${userId}_${time}-${date}.jpg`;
+        const filePath = path.join(savedFolder, finalFileName);
+
         fs.writeFileSync(filePath, buffer);
-        console.log(`Image saved at: ${filePath}`);
+        console.log(`Photo saved at: ${filePath}`);
 
-        // Query database untuk mendapatkan data pengguna
-        const [rows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
-        if (rows.length === 0) throw new Error('User not found');
+        // Execute Python script
+        const scriptPath = path.join(__dirname, '../ocr_processing.py');
+        console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
-        const { age, bb } = rows[0];
-        console.log(`User Data - ID: ${userId}, Age: ${age}, BB: ${bb}`);
-
-        // Jalankan Python script
-        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath]);
+        const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
-            console.log(`Python stdout: ${data}`);
+            console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data}`);
+            console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
         });
 
-        await new Promise((resolve, reject) => {
+        const result = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
-                    resolve();
+                    try {
+                        const output = JSON.parse(scriptOutput.trim());
+                        if (output.message === "Tidak ditemukan") {
+                            resolve({
+                                message: "Tidak ditemukan",
+                                nutrition_info: null,
+                            });
+                        } else if (output.nutrition_info && Object.keys(output.nutrition_info).length > 0) {
+                            resolve({
+                                message: "Berhasil",
+                                nutrition_info: output.nutrition_info,
+                            });
+                        } else {
+                            reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
+                        }
+                    } catch (error) {
+                        console.error("Raw script output:", scriptOutput);
+                        reject(new Error('Failed to parse script output as JSON.'));
+                    }
                 } else {
                     reject(new Error('Python script exited with error'));
                 }
             });
         });
 
-        console.log("Python script output:", scriptOutput);
-
-        // Parse JSON dari output Python
-        const output = JSON.parse(scriptOutput.trim());
-        console.log("Parsed output:", output);
-
-        // Pastikan JSON valid dan respons memiliki struktur yang diharapkan
-        if (!output || !output.message || !output.nutrition_info) {
-            throw new Error("Invalid output from Python script");
-        }
+        // Log the final response data
+        console.log("Final response data sent to client:", {
+            filePath,
+            message: result.message,
+            nutrition_info: result.nutrition_info,
+        });
 
         return h.response({
             status: 'success',
-            message: output.message,
-            data: output.nutrition_info,
-        }).code(200);
+            message: 'Photo uploaded and processed successfully',
+            data: {
+                message: result.message,
+                nutrition_info: result.nutrition_info,
+            },
+        }).code(201);
     } catch (error) {
-        console.error('Error processing photo:', error.message);
+        console.error('Error uploading and processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: `Failed to process photo: ${error.message}`,
+            message: 'Failed to upload and process photo',
         }).code(500);
     }
 };

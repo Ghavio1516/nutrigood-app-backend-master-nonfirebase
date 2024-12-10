@@ -119,16 +119,16 @@ if __name__ == "__main__":
         nutrition_info = parse_nutrition_info(extracted_text)
 
         # Cek hasil dan output JSON ke stdout
-        response = {
-            "message": "Berhasil" if nutrition_info else "Tidak ditemukan",
-            "nutrition_info": nutrition_info if nutrition_info else {},
-        }
+        if not nutrition_info:
+            response = {"message": "Tidak ditemukan", "nutrition_info": {}}
+        else:
+            response = {"message": "Berhasil", "nutrition_info": nutrition_info}
 
-        # Cetak JSON ke stdout
+        # Cetak JSON hanya ke stdout
         print(json.dumps(response, indent=4))
-        sys.exit(0)  # Sukses
+
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}}
         print(json.dumps(response, indent=4))
-        sys.exit(1)  # Gagal
+        sys.exit(1)
