@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 from paddleocr import PaddleOCR
 import re
+import cv2
 
 # Konfigurasi logging
 logging.basicConfig(
@@ -105,21 +106,22 @@ def parse_nutrition_info(extracted_text):
 # Fungsi untuk memuat model TensorFlow.js dan membuat prediksi
 def analyze_with_model(nutrition_info, model_path):
     try:
-        # Load model dari file .h5
         model = tf.keras.models.load_model(model_path)
-        logging.info("Model .h5 berhasil dimuat.")
+        logging.info("Model berhasil dimuat.")
 
-        # Siapkan input untuk prediksi
+        # Siapkan input
         serving_per_package = float(nutrition_info.get("Sajian per kemasan", 0))
         sugar = float(re.search(r"[\d.]+", nutrition_info.get("Sugars", "0")).group())
         total_sugar = float(nutrition_info.get("Total Sugar", 0))
 
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
-        predictions = model.predict(input_data)
+        logging.info(f"Input data: {input_data}")
 
+        # Lakukan prediksi
+        predictions = model.predict(input_data)
         logging.info(f"Predictions: {predictions}")
 
-        # Gunakan a.any() atau a.all() untuk evaluasi prediksi
+        # Evaluasi hasil prediksi
         kategori_gula = "Tinggi Gula" if predictions[0][0] > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if predictions[0][1] > 0.5 else "Aman Dikonsumsi"
 
@@ -127,6 +129,7 @@ def analyze_with_model(nutrition_info, model_path):
             "Kategori Gula": kategori_gula,
             "Rekomendasi": rekomendasi
         }
+
     except Exception as e:
         logging.error(f"Error during prediction: {str(e)}")
         return {}
@@ -136,26 +139,44 @@ if __name__ == "__main__":
     try:
         # Path gambar dan model
         image_path = sys.argv[1]
-        model_path = "./model/model_3Variabel_fix.h5"  # Sesuaikan path model
+        model_path = "./model/model_3Variabel_fix.h5"
 
-        # Ekstraksi teks dari gambar
+        # Membaca gambar dari path
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
+
+        logging.info(f"Memproses gambar: {image_path}")
+
+        # Ekstraksi teks dari gambar menggunakan OCR
         extracted_text = extract_text_from_image(image_path)
 
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
 
-        # Validasi hasil
+        # Validasi apakah informasi nutrisi ditemukan
         if not nutrition_info:
-            response = {"message": "Tidak ditemukan", "nutrition_info": {}}
+            response = {"message": "Tidak ditemukan", "nutrition_info": {}, "analysis": {}}
         else:
-            analysis_result = analyze_with_model(nutrition_info, model_path)
+            # Analisis menggunakan model TensorFlow
+            try:
+                analysis_result = analyze_with_model(nutrition_info, model_path)
+                if not analysis_result:
+                    analysis_result = {"error": "Analisis model gagal dilakukan."}
+            except Exception as analysis_error:
+                logging.error(f"Error during analysis: {str(analysis_error)}")
+                analysis_result = {"error": "Terjadi kesalahan saat analisis model."}
+
+            # Bangun respons akhir
             response = {
                 "message": "Berhasil",
                 "nutrition_info": nutrition_info,
                 "analysis": analysis_result,
             }
 
+        # Cetak JSON hasil ke stdout
         print(json.dumps(response, indent=4))
+
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}, "analysis": {}}
