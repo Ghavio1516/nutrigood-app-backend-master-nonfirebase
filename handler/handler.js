@@ -127,7 +127,6 @@ const getTodayProductsHandler = async (request, h) => {
 };
 
 // Handler untuk registrasi user
-// Handler untuk registrasi user
 const registerUserHandler = async (request, h) => {
     const { email, password, name, age, diabetes, bb } = request.payload;
 
@@ -278,52 +277,14 @@ const loginUserHandler = async (request, h) => {
 
 const fs = require('fs');
 const path = require('path');
-const tf = require('@tensorflow/tfjs-node');
-const sharp = require('sharp');
-const mobilenet = require('@tensorflow-models/mobilenet');
-const { createCanvas, loadImage } = require('canvas');
-const Ocr = require('@paddle-js-models/ocr');
+const { spawn } = require('child_process');
 
-// Fungsi Ekstraksi Teks Sederhana
-const extractTextFromImage = async (imageBuffer) => {
-    const PaddleOCR = require('paddleocr');
-    const ocr = new PaddleOCR({ lang: 'en' });
-    const result = await ocr.recognize(imageBuffer);
-    return result.text;
-};
-
-// Fungsi Normalisasi Input Model
-const normalizeInput = (values) => {
-    const maxValues = [10, 100, 1000];  // Sesuaikan nilai maksimum
-    return values.map((val, idx) => val / maxValues[idx]);
-};
-
-// Fungsi Prediksi dengan TensorFlow.js
-const predictNutrition = async (input) => {
-    const modelPath = path.join(__dirname, '../model/model_Fix_5Variabel.json');
-    const model = await tf.loadLayersModel(`file://${modelPath}`);
-    const tensor = tf.tensor2d([input], [1, 3]);
-    const prediction = model.predict(tensor).arraySync()[0];
-
-    return {
-        KategoriGula: prediction[0] > 0.5 ? 'Tinggi Gula' : 'Rendah Gula',
-        Rekomendasi: prediction[1] > 0.5 ? 'Kurangi Konsumsi' : 'Aman Dikonsumsi',
-    };
-};
-
-// Dynamic import function for OCR
-const loadOCR = async () => {
-    const { Ocr } = await import('@paddle-js-models/ocr');
-    return new Ocr();
-};
-
-// Updated handler function
+// Handler untuk mengunggah dan memproses foto
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
 
     if (!base64Image) {
-        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -331,56 +292,40 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
-        console.log("Starting photo upload and processing...");
-
-        // Decode Base64 and save image
-        const base64Data = base64Image.split(',')[1];
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        const savedFolder = path.join(__dirname, '../saved_photos');
-        if (!fs.existsSync(savedFolder)) {
-            console.log("Creating saved_photos directory...");
-            fs.mkdirSync(savedFolder, { recursive: true });
-        }
-
-        const now = new Date();
-        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
-        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
-        const finalFileName = `${userId}_${time}-${date}.jpg`;
-        const filePath = path.join(savedFolder, finalFileName);
-
+        const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
+        const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
-        console.log(`Photo saved at: ${filePath}`);
-
-        // Load OCR dynamically
-        const ocr = await loadOCR();
-        console.log("OCR Model Loaded");
-
-        // Perform OCR
-        const ocrResult = await ocr.run(filePath);
-        console.log("OCR Result:", ocrResult);
-
-        if (!ocrResult || ocrResult.length === 0) {
-            return h.response({
-                status: 'fail',
-                message: 'OCR did not return any results',
-            }).code(400);
-        }
-
-        return h.response({
-            status: 'success',
-            message: 'Photo uploaded and processed successfully',
-            data: { ocrResult },
-        }).code(201);
-
+    
+        const [rows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
+        if (rows.length === 0) throw new Error('User not found');
+    
+        // Ambil data pengguna dari hasil query
+        const user = rows[0];
+        console.log("User ID: ", userId);
+        const { age, bb } = user;
+        console.log("Age:", age, "BB:", bb);
+    
+        const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath, age, bb]);
+    
+        let scriptOutput = '';
+        pythonProcess.stdout.on('data', (data) => (scriptOutput += data.toString()));
+        pythonProcess.stderr.on('data', (data) => console.error(data.toString()));
+    
+        await new Promise((resolve, reject) => {
+            pythonProcess.on('close', (code) => (code === 0 ? resolve() : reject()));
+        });
+    
+        const output = JSON.parse(scriptOutput.trim());
+        return h.response(output).code(200);
     } catch (error) {
-        console.error('Error uploading and processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: `Failed to upload and process photo: ${error.message}`,
+            message: `Failed to process: ${error.message}`,
         }).code(500);
     }
+    
 };
+
 
 // Ekspor semua handler
 module.exports = {
