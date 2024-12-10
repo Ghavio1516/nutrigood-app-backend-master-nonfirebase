@@ -370,7 +370,7 @@ const uploadPhotoHandler = async (request, h) => {
             data: {
                 message: result.message,
                 nutrition_info: result.nutrition_info,
-                analysis: result.analysis_result,
+                analysis_result: result.analysis_result,
             },
         }).code(201);
     } catch (error) {
