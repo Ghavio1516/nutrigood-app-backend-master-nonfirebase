@@ -105,9 +105,9 @@ def parse_nutrition_info(extracted_text):
 # Fungsi untuk memuat model TensorFlow.js dan membuat prediksi
 def analyze_with_model(nutrition_info, model_path):
     try:
-        # Muat model TensorFlow.js
+        # Muat model dari file .h5
         model = tf.keras.models.load_model(model_path)
-        logging.info("Model berhasil dimuat.")
+        logging.info("Model .h5 berhasil dimuat.")
 
         # Siapkan input untuk prediksi
         serving_per_package = float(nutrition_info.get("Sajian per kemasan", 0))
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     try:
         # Path gambar dan model
         image_path = sys.argv[1]
-        model_path = "./model/model/"  # Sesuaikan path model
+        model_path = "./model/analisis-nutrisi.h5"  # Sesuaikan path model
 
         # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
