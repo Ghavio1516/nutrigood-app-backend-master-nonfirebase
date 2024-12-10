@@ -64,14 +64,14 @@ def parse_nutrition_info(extracted_text):
         serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
         patterns = {
-            'Sajian per kemasan': rf'([0-9]+)\s*(?:[:\-]|\s*)?\s*({serving_pattern})|({serving_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+)',
-            'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
+            'Sajian per kemasan': rf'({serving_pattern})\s*[:\-]?\s*([0-9]+)',
+            'Sugars': rf'({sugar_pattern})\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
         }
 
         for key, pattern in patterns.items():
             match = re.search(pattern, extracted_text, re.IGNORECASE)
             if match:
-                found_value = match.group(1) or match.group(4) if key == "Sajian per kemasan" else match.group(2)
+                found_value = match.group(2)  # Ambil angka (group kedua)
                 if found_value:
                     nutrition_data[key] = found_value.strip()
                     logging.info(f"{key} ditemukan: {nutrition_data[key]}")
@@ -81,7 +81,7 @@ def parse_nutrition_info(extracted_text):
                 logging.warning(f"Tidak ditemukan data untuk {key}.")
 
         # Tetapkan nilai default untuk "Sajian per kemasan"
-        if "Sajian per kemasan" not in nutrition_data or nutrition_data["Sajian per kemasan"] is None:
+        if "Sajian per kemasan" not in nutrition_data or not nutrition_data["Sajian per kemasan"].isdigit():
             logging.warning("Sajian per kemasan tidak ditemukan! Menggunakan nilai default 1.")
             nutrition_data["Sajian per kemasan"] = "1"
 
@@ -122,11 +122,16 @@ def predict_nutrition_category(nutrition_data):
         total_sugar = clean_float(nutrition_data["Total Sugar"])
 
         input_tensor = tf.convert_to_tensor([[serving_per_container, sugars, total_sugar]])
-        predictions = model.predict(input_tensor)[0]
+        predictions = model.predict(input_tensor)
+
+        logging.info(f"Hasil prediksi mentah: {predictions}")
+
+        if len(predictions[0]) != 2:
+            raise ValueError("Model mengembalikan output yang tidak sesuai.")
 
         return {
-            "Kategori Gula": "Tinggi" if predictions[0] > 0.5 else "Rendah",
-            "Rekomendasi": "Kurangi konsumsi" if predictions[1] > 0.5 else "Aman dikonsumsi"
+            "Kategori Gula": "Tinggi" if predictions[0][0] > 0.5 else "Rendah",
+            "Rekomendasi": "Kurangi konsumsi" if predictions[0][1] > 0.5 else "Aman dikonsumsi"
         }
 
     except Exception as e:
