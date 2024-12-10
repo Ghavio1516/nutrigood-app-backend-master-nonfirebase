@@ -277,7 +277,6 @@ const loginUserHandler = async (request, h) => {
 
 const fs = require('fs');
 const { spawn } = require('child_process');
-const data = require('../database/database');
 
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth; // Mendapatkan ID pengguna dari autentikasi
