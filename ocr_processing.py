@@ -7,7 +7,7 @@ import re
 import sys
 
 # Konfigurasi logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Inisialisasi PaddleOCR
 ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
