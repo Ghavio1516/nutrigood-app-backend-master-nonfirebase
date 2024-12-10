@@ -4,7 +4,6 @@ import numpy as np
 import tensorflow as tf
 from paddleocr import PaddleOCR
 import re
-import cv2
 import sys
 
 # Konfigurasi logging
@@ -106,17 +105,28 @@ def analyze_with_model(nutrition_info, model_path):
         sugar = float(re.search(r"[\d.]+", nutrition_info.get("Sugars", "0")).group())
         total_sugar = float(re.search(r"[\d.]+", nutrition_info.get("Total Sugar", "0")).group())
 
-        # Normalisasi input
+        # Input data
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
         logging.info(f"Input data: {input_data}")
+
+        # Debugging input data
+        print("Detail Input Data ke Model:")
+        print(f"Shape: {input_data.shape}")
+        print(input_data)
 
         # Prediksi
         predictions = model.predict(input_data)
         logging.info(f"Predictions: {predictions}")
 
-        # Ambil prediksi
-        kategori_gula = "Tinggi Gula" if predictions[0][0] > 0.5 else "Rendah Gula"
-        rekomendasi = "Kurangi Konsumsi" if predictions[0][1] > 0.5 else "Aman Dikonsumsi"
+        # Periksa bentuk output
+        if predictions.ndim == 2 and predictions.shape[1] >= 2:
+            pred_kategori_gula = predictions[0][0]
+            pred_rekomendasi = predictions[0][1]
+        else:
+            raise ValueError("Model tidak memberikan output yang diharapkan.")
+
+        kategori_gula = "Tinggi Gula" if pred_kategori_gula > 0.5 else "Rendah Gula"
+        rekomendasi = "Kurangi Konsumsi" if pred_rekomendasi > 0.5 else "Aman Dikonsumsi"
 
         return {
             "Kategori Gula": kategori_gula,
