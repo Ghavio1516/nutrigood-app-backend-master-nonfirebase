@@ -2,12 +2,15 @@ const data = require('../database/database');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const tf = require('@tensorflow/tfjs-node');
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
 
 // Fungsi untuk menghasilkan SHA-256 hash
 function generateUniqueId(email) {
     return crypto.createHash('sha256').update(email).digest('hex');
 }
-
 
 // Handler untuk menambahkan produk
 const addProductHandler = async (request, h) => {
@@ -276,9 +279,6 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
 
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
@@ -293,15 +293,22 @@ const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
+<<<<<<< HEAD
         console.log("Starting photo upload and processing...");
 
         // Decode Base64 and save image
+=======
+        // Decode Base64 dan simpan gambar
+>>>>>>> 4b435ca5fbec3fc8aae50d236aed6af227e18f72
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
         const savedFolder = path.join(__dirname, '../saved_photos');
         if (!fs.existsSync(savedFolder)) {
+<<<<<<< HEAD
             console.log("Creating saved_photos directory...");
+=======
+>>>>>>> 4b435ca5fbec3fc8aae50d236aed6af227e18f72
             fs.mkdirSync(savedFolder, { recursive: true });
         }
 
@@ -312,22 +319,35 @@ const uploadPhotoHandler = async (request, h) => {
         const filePath = path.join(savedFolder, finalFileName);
 
         fs.writeFileSync(filePath, buffer);
+<<<<<<< HEAD
         console.log(`Photo saved at: ${filePath}`);
 
         // Execute Python script
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
+=======
+
+        // Jalankan script OCR dengan prediksi model
+        const scriptPath = path.join(__dirname, '../ocr_processing.py');
+>>>>>>> 4b435ca5fbec3fc8aae50d236aed6af227e18f72
         const pythonProcess = spawn('python3', [scriptPath, filePath]);
 
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
+<<<<<<< HEAD
             console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
         });
 
         pythonProcess.stderr.on('data', (data) => {
             console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
+=======
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error(`Python stderr: ${data.toString()}`);
+>>>>>>> 4b435ca5fbec3fc8aae50d236aed6af227e18f72
         });
 
         const result = await new Promise((resolve, reject) => {
@@ -335,6 +355,7 @@ const uploadPhotoHandler = async (request, h) => {
                 if (code === 0) {
                     try {
                         const output = JSON.parse(scriptOutput.trim());
+<<<<<<< HEAD
                         if (output.message === "Tidak ditemukan") {
                             resolve({
                                 message: "Tidak ditemukan",
@@ -351,6 +372,12 @@ const uploadPhotoHandler = async (request, h) => {
                     } catch (error) {
                         console.error("Raw script output:", scriptOutput);
                         reject(new Error('Failed to parse script output as JSON.'));
+=======
+                        resolve(output);
+                    } catch (error) {
+                        console.error("Failed to parse script output as JSON.");
+                        reject(new Error('Failed to parse script output.'));
+>>>>>>> 4b435ca5fbec3fc8aae50d236aed6af227e18f72
                     }
                 } else {
                     reject(new Error('Python script exited with error'));
@@ -358,6 +385,7 @@ const uploadPhotoHandler = async (request, h) => {
             });
         });
 
+<<<<<<< HEAD
         // Log the final response data
         console.log("Final response data sent to client:", {
             filePath,
@@ -378,9 +406,23 @@ const uploadPhotoHandler = async (request, h) => {
         return h.response({
             status: 'fail',
             message: 'Failed to upload and process photo',
+=======
+        return h.response({
+            status: 'success',
+            message: 'Photo uploaded and processed successfully',
+            data: result.nutrition_info,
+        }).code(201);
+
+    } catch (error) {
+        console.error('Error processing photo:', error.message);
+        return h.response({
+            status: 'fail',
+            message: 'Failed to process photo',
+>>>>>>> 4b435ca5fbec3fc8aae50d236aed6af227e18f72
         }).code(500);
     }
 };
+
 
 
 // Ekspor semua handler
