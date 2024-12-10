@@ -112,9 +112,15 @@ def analyze_with_model(nutrition_info, model_path):
         #print("Detail Input Data ke Model:")
         #print(f"Shape: {input_data.shape}")
         #print(input_data)
+        print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
 
         # Prediksi
-        predictions = model.predict(input_data)
+        # Normalisasi jika dibutuhkan
+        input_data_normalized = input_data / np.max(input_data, axis=0)
+        print(f"Input Normalized: {input_data_normalized}")
+        predictions = model.predict(input_data_normalized)
+
+        #predictions = model.predict(input_data)
         logging.info(f"Raw predictions: {predictions}")
 
         # Pastikan predictions adalah numpy array
