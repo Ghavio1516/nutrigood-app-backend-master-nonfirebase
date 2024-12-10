@@ -94,7 +94,6 @@ def parse_nutrition_info(extracted_text):
 
     return nutrition_data
 
-# Analisis dengan Model TensorFlow
 def analyze_with_model(nutrition_info, model_path):
     try:
         model = tf.keras.models.load_model(model_path)
@@ -127,15 +126,23 @@ def analyze_with_model(nutrition_info, model_path):
         print(f"Predictions Shape: {predictions.shape}")
         print(f"Predictions Content: {predictions}")
 
-        # Periksa bentuk output
-        if predictions.ndim == 2 and predictions.shape[1] >= 2:
-            pred_kategori_gula = predictions[0][0]
-            pred_rekomendasi = predictions[0][1]
-        elif predictions.ndim == 1 and predictions.size >= 2:
+        # Tangani dimensi tambahan
+        predictions = np.squeeze(predictions)  # Hilangkan dimensi tambahan
+        print(f"Predictions after squeeze: {predictions.shape}")
+        print(predictions)
+
+        # Pilih batch pertama jika output adalah batch
+        if predictions.ndim == 3:
+            predictions = predictions[0]  # Ambil batch pertama
+        elif predictions.ndim == 2:
+            predictions = predictions[0]  # Ambil baris pertama dari batch
+
+        # Validasi prediksi
+        if predictions.shape[0] >= 2:
             pred_kategori_gula = predictions[0]
             pred_rekomendasi = predictions[1]
         else:
-            raise ValueError(f"Unexpected model output shape: {predictions.shape}")
+            raise ValueError(f"Unexpected model output shape after processing: {predictions.shape}")
 
         kategori_gula = "Tinggi Gula" if pred_kategori_gula > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if pred_rekomendasi > 0.5 else "Aman Dikonsumsi"
