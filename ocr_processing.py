@@ -133,7 +133,7 @@ if __name__ == "__main__":
     try:
         # Path gambar dan model
         image_path = sys.argv[1]
-        model_path = "./model/"  # Sesuaikan path model
+        model_path = "./model/model/"  # Sesuaikan path model
 
         # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
