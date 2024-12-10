@@ -182,14 +182,9 @@ if __name__ == "__main__":
                 "nutrition_info": nutrition_info,
                 "analysis": analysis_result,
             }
-        try:
-            output = json.dumps(response, indent=4)
-            print(output)
-        except Exception as e:
-            logging.error(f"Failed to serialize response: {str(e)}")
-            print(json.dumps({"message": "Error serializing JSON"}, indent=4))
-            sys.exit(1)
-
+        # Cetak hanya JSON valid ke stdout
+        print(json.dumps(response, indent=4))
+        sys.stdout.flush()  # Pastikan stdout bersih untuk JSON
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         response = {"message": "Error", "nutrition_info": {}, "analysis": {}}
