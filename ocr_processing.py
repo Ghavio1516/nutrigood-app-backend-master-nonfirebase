@@ -109,9 +109,9 @@ def analyze_with_model(nutrition_info, model_path):
         logging.info(f"Input data: {input_data}")
 
         # Debugging input data
-        print("Detail Input Data ke Model:")
-        print(f"Shape: {input_data.shape}")
-        print(input_data)
+        #print("Detail Input Data ke Model:")
+        #print(f"Shape: {input_data.shape}")
+        #print(input_data)
 
         # Prediksi
         predictions = model.predict(input_data)
@@ -123,13 +123,13 @@ def analyze_with_model(nutrition_info, model_path):
             logging.info(f"Predictions converted to numpy array: {predictions}")
 
         # Debugging output predictions
-        print(f"Predictions Shape: {predictions.shape}")
-        print(f"Predictions Content: {predictions}")
+        #print(f"Predictions Shape: {predictions.shape}")
+        #print(f"Predictions Content: {predictions}")
 
         # Tangani dimensi tambahan
         predictions = np.squeeze(predictions)  # Hilangkan dimensi tambahan
-        print(f"Predictions after squeeze: {predictions.shape}")
-        print(predictions)
+        #print(f"Predictions after squeeze: {predictions.shape}")
+        #print(predictions)
 
         # Pilih batch pertama jika output adalah batch
         if predictions.ndim == 3:
