@@ -334,19 +334,35 @@ const uploadPhotoHandler = async (request, h) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        console.log("Raw Python script output:", scriptOutput); // Debugging raw output
-                        const output = JSON.parse(scriptOutput.trim());
-                        resolve(output);
+                        // Ambil hanya baris terakhir JSON
+                        const lines = scriptOutput.trim().split('\n');
+                        const jsonOutput = lines[lines.length - 1];
+                        const output = JSON.parse(jsonOutput);
+        
+                        if (output.message === "Tidak ditemukan") {
+                            resolve({
+                                message: "Tidak ditemukan",
+                                nutrition_info: null,
+                            });
+                        } else if (output.nutrition_info && Object.keys(output.nutrition_info).length > 0) {
+                            resolve({
+                                message: "Berhasil",
+                                nutrition_info: output.nutrition_info,
+                                analysis: output.analysis,
+                            });
+                        } else {
+                            reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
+                        }
                     } catch (error) {
-                        console.error("Error parsing JSON from Python script:", error.message);
-                        reject(new Error("Failed to parse script output as JSON."));
+                        console.error("Raw script output:", scriptOutput);
+                        reject(new Error('Failed to parse script output as JSON.'));
                     }
                 } else {
-                    reject(new Error("Python script exited with error"));
+                    reject(new Error('Python script exited with error'));
                 }
             });
         });
-        
+
         // Log the final response data
         console.log("Final response data sent to client:", {
             filePath,
