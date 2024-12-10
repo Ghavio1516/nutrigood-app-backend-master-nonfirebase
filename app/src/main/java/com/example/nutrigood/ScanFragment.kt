@@ -231,11 +231,13 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                 // Sembunyikan ProgressBar setelah respons diterima
                 progressBar.visibility = View.GONE
 
+
                 if (response.isSuccessful) {
                     val responseData = response.body()?.data
                     if (responseData != null) {
                         val message = responseData.message
                         val nutritionInfo = responseData.nutrition_info
+                        val analysis = responseData.analysis
 
                         scanResultTextView.visibility = View.VISIBLE
                         scanButton.visibility = View.GONE
@@ -247,9 +249,19 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                             val resultText = nutritionInfo.entries.joinToString(separator = "\n") {
                                 "${it.key}: ${it.value}"
                             }
-                            scanResultTextView.text = "Hasil Scan:\n$resultText"
+                            // Tambahkan analysis jika ada
+                            scanResultTextView.text = if (!analysis.isNullOrEmpty()) {
+                                "Hasil Scan:\n$resultText\n\nAnalisis:\n$analysis"
+                            } else {
+                                "Hasil Scan:\n$resultText"
+                            }
                         } else {
-                            scanResultTextView.text = "Hasil Scan tidak ditemukan"
+                            // Tambahkan analysis jika ada
+                            scanResultTextView.text = if (!analysis.isNullOrEmpty()) {
+                                "Hasil Scan tidak ditemukan\n\nAnalisis:\n$analysis"
+                            } else {
+                                "Hasil Scan tidak ditemukan"
+                            }
                         }
                     }
                     Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_LONG).show()
@@ -259,6 +271,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                     Toast.makeText(requireContext(), "Error: $errorMessage", Toast.LENGTH_SHORT).show()
                 }
             }
+
 
             override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
                 progressBar.visibility = View.GONE // Sembunyikan ProgressBar jika gagal
