@@ -275,13 +275,13 @@ const loginUserHandler = async (request, h) => {
     }
 };
 
-import fs from 'fs';
-import { spawn } from 'child_process';
-import path from 'path';
+const fs = require('fs');
+const { spawn } = require('child_process');
+const data = require('../database/database');
 
-export const uploadPhotoHandler = async (request, h) => {
-    const { userId } = request.auth;
-    const { base64Image } = request.payload;
+const uploadPhotoHandler = async (request, h) => {
+    const { userId } = request.auth; // Mendapatkan ID pengguna dari autentikasi
+    const { base64Image } = request.payload; // Gambar dalam format Base64
 
     if (!base64Image) {
         return h.response({
@@ -291,20 +291,22 @@ export const uploadPhotoHandler = async (request, h) => {
     }
 
     try {
+        console.log("Starting photo upload process...");
+
+        // Decode Base64 dan simpan ke file sementara
         const buffer = Buffer.from(base64Image.split(',')[1], 'base64');
         const filePath = `/tmp/${userId}_${Date.now()}.jpg`;
         fs.writeFileSync(filePath, buffer);
-
         console.log(`Image saved at: ${filePath}`);
 
-        // Ambil data pengguna dari database
+        // Query database untuk mendapatkan data pengguna
         const [rows] = await data.query('SELECT age, bb FROM users WHERE id = ?', [userId]);
         if (rows.length === 0) throw new Error('User not found');
 
         const { age, bb } = rows[0];
         console.log(`User Data - ID: ${userId}, Age: ${age}, BB: ${bb}`);
 
-        // Jalankan proses Python
+        // Jalankan Python script
         const pythonProcess = spawn('python3', ['./ocr_processing.py', filePath]);
 
         let scriptOutput = '';
@@ -327,11 +329,13 @@ export const uploadPhotoHandler = async (request, h) => {
             });
         });
 
-        console.log("Script output:", scriptOutput);
+        console.log("Python script output:", scriptOutput);
 
-        // Parse JSON output
+        // Parse JSON dari output Python
         const output = JSON.parse(scriptOutput.trim());
+        console.log("Parsed output:", output);
 
+        // Pastikan JSON valid dan respons memiliki struktur yang diharapkan
         if (!output || !output.message || !output.nutrition_info) {
             throw new Error("Invalid output from Python script");
         }
@@ -349,7 +353,6 @@ export const uploadPhotoHandler = async (request, h) => {
         }).code(500);
     }
 };
-
 
 // Ekspor semua handler
 module.exports = {
