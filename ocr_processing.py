@@ -95,6 +95,7 @@ def parse_nutrition_info(extracted_text):
     return nutrition_data
 
 # Analisis dengan Model TensorFlow
+# Analisis dengan Model TensorFlow
 def analyze_with_model(nutrition_info, model_path):
     try:
         model = tf.keras.models.load_model(model_path)
@@ -116,7 +117,12 @@ def analyze_with_model(nutrition_info, model_path):
 
         # Prediksi
         predictions = model.predict(input_data)
-        logging.info(f"Predictions: {predictions}")
+        logging.info(f"Raw predictions: {predictions}")
+
+        # Pastikan predictions adalah numpy array
+        if isinstance(predictions, list):
+            predictions = np.array(predictions)
+            logging.info(f"Predictions converted to numpy array: {predictions}")
 
         # Periksa bentuk output
         if predictions.ndim == 2 and predictions.shape[1] >= 2:
