@@ -68,9 +68,9 @@ def parse_nutrition_info(extracted_text):
                 nutrition_data[key] = found_value.strip()
                 logging.info(f"{key} ditemukan: {nutrition_data[key]}")
             else:
-                logging.warning(f"Tidak ditemukan nilai untuk {key}.")
+                logging.warning(f"Tidak ditemukan nilai untuk {key} meskipun pola cocok.")
         else:
-            logging.warning(f"Tidak ditemukan data untuk {key}.")
+            logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
 
     # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     if "Sajian per kemasan" not in nutrition_data:
@@ -101,27 +101,41 @@ def analyze_with_model(nutrition_info, model_path):
 
         # Siapkan input untuk model
         serving_per_package = float(nutrition_info.get("Sajian per kemasan", 0))
-        sugar = float(nutrition_info.get("Sugars", 0))
-        total_sugar = float(nutrition_info.get("Total Sugar", 0))
+        sugar = float(re.search(r"[\d.]+", nutrition_info.get("Sugars", "0")).group())
+        total_sugar = float(re.search(r"[\d.]+", nutrition_info.get("Total Sugar", "0")).group())
 
         # Input data
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
         logging.info(f"Input data: {input_data}")
 
-        # Normalisasi jika dibutuhkan (sama seperti yang digunakan saat pelatihan model)
-        input_data_normalized = input_data / np.max(input_data, axis=0)
-        logging.info(f"Input Normalized: {input_data_normalized}")
+        # Debugging input data
+        print("Detail Input Data ke Model:")
+        print(f"Shape: {input_data.shape}")
+        print(input_data)
+        print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
 
         # Prediksi
+        # Normalisasi jika dibutuhkan
+        input_data_normalized = input_data / np.max(input_data, axis=0)
+        print(f"Input Normalized: {input_data_normalized}")
         predictions = model.predict(input_data_normalized)
+
+        #predictions = model.predict(input_data)
+        logging.info(f"Raw predictions: {predictions}")
 
         # Pastikan predictions adalah numpy array
         if isinstance(predictions, list):
             predictions = np.array(predictions)
             logging.info(f"Predictions converted to numpy array: {predictions}")
 
+        # Debugging output predictions
+        #print(f"Predictions Shape: {predictions.shape}")
+        #print(f"Predictions Content: {predictions}")
+
         # Tangani dimensi tambahan
         predictions = np.squeeze(predictions)  # Hilangkan dimensi tambahan
+        #print(f"Predictions after squeeze: {predictions.shape}")
+        #print(predictions)
 
         # Pilih batch pertama jika output adalah batch
         if predictions.ndim == 3:
@@ -138,7 +152,8 @@ def analyze_with_model(nutrition_info, model_path):
 
         kategori_gula = "Tinggi Gula" if pred_kategori_gula > 0.5 else "Rendah Gula"
         rekomendasi = "Kurangi Konsumsi" if pred_rekomendasi > 0.5 else "Aman Dikonsumsi"
-
+        print(f"Prediksi Kategori Gula: {pred_kategori_gula}")
+        print(f"Prediksi Rekomendasi: {pred_rekomendasi}")
         return {
             "Kategori Gula": kategori_gula,
             "Rekomendasi": rekomendasi
@@ -174,7 +189,6 @@ if __name__ == "__main__":
                 "nutrition_info": nutrition_info,
                 "analysis": analysis_result,
             }
-
         try:
             output = json.dumps(response, indent=4)
             print(f"Output : {json.dumps(response, indent=4)}")
