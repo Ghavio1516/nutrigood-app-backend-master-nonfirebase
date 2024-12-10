@@ -1,25 +1,17 @@
 import json
-import sys
 import logging
 import numpy as np
 import tensorflow as tf
 from paddleocr import PaddleOCR
 import re
 import cv2
+import sys
 
 # Konfigurasi logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    stream=sys.stderr
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Inisialisasi PaddleOCR
-ocr = PaddleOCR(
-    use_angle_cls=True,
-    lang='en',
-    show_log=False
-)
+ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
 
 # Variasi pencarian teks
 sugar_variations = [
@@ -47,7 +39,7 @@ def extract_text_from_image(image_path):
     full_text = "\n".join([line[1][0] for line in results[0]])
 
     if full_text.strip():
-        logging.warning(f"Teks hasil OCR:\n{full_text.strip()}")
+        logging.info(f"Teks hasil OCR:\n{full_text.strip()}")
     else:
         logging.warning("Teks hasil OCR kosong.")
     
@@ -96,54 +88,35 @@ def parse_nutrition_info(extracted_text):
     if sugar_value:
         try:
             sugar_amount = float(re.search(r"[\d.]+", sugar_value).group())
-            nutrition_data["Total Sugar"] = sugar_amount * serving_count
-            logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']:.2f} g")
+            nutrition_data["Total Sugar"] = f"{sugar_amount * serving_count:.2f} g"
+            logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
         except AttributeError:
             logging.error("Tidak dapat menghitung Total Sugar karena nilai gula tidak valid.")
 
     return nutrition_data
 
-# Fungsi untuk memuat model TensorFlow.js dan membuat prediksi
+# Analisis dengan Model TensorFlow
 def analyze_with_model(nutrition_info, model_path):
     try:
-        # Muat model
         model = tf.keras.models.load_model(model_path)
         logging.info("Model berhasil dimuat.")
 
-        # Siapkan input
+        # Siapkan input untuk model
         serving_per_package = float(nutrition_info.get("Sajian per kemasan", 0))
         sugar = float(re.search(r"[\d.]+", nutrition_info.get("Sugars", "0")).group())
-        total_sugar = float(nutrition_info.get("Total Sugar", 0))
+        total_sugar = float(re.search(r"[\d.]+", nutrition_info.get("Total Sugar", "0")).group())
 
         # Normalisasi input
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
         logging.info(f"Input data: {input_data}")
 
-        # Lakukan prediksi
+        # Prediksi
         predictions = model.predict(input_data)
-        logging.info(f"Predictions type: {type(predictions)}, content: {predictions}")
+        logging.info(f"Predictions: {predictions}")
 
-        # Konversi ke numpy array jika predictions berupa list
-        if isinstance(predictions, list):
-            predictions = np.array(predictions)
-
-        # Periksa bentuk output
-        if predictions.ndim == 2 and predictions.shape[1] >= 2:
-            pred_kategori_gula = predictions[0][0]
-            pred_rekomendasi = predictions[0][1]
-        elif predictions.ndim == 1 and predictions.shape[0] >= 1:
-            pred_kategori_gula = predictions[0]
-            pred_rekomendasi = None  # Tidak ada indeks kedua
-        else:
-            raise ValueError("Model tidak memberikan output yang diharapkan.")
-        
-        logging.info(f"Model input data shape: {input_data.shape}")
-        logging.info(f"Model output raw predictions: {predictions}")
-
-        kategori_gula = "Tinggi Gula" if float(pred_kategori_gula) > 0.5 else "Rendah Gula"
-        rekomendasi = (
-            "Kurangi Konsumsi" if pred_rekomendasi and float(pred_rekomendasi) > 0.5 else "Aman Dikonsumsi"
-        )
+        # Ambil prediksi
+        kategori_gula = "Tinggi Gula" if predictions[0][0] > 0.5 else "Rendah Gula"
+        rekomendasi = "Kurangi Konsumsi" if predictions[0][1] > 0.5 else "Aman Dikonsumsi"
 
         return {
             "Kategori Gula": kategori_gula,
@@ -161,14 +134,7 @@ if __name__ == "__main__":
         image_path = sys.argv[1]
         model_path = "./model/model_3Variabel_fix.h5"
 
-        # Membaca gambar dari path
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
-
-        logging.info(f"Memproses gambar: {image_path}")
-
-        # Ekstraksi teks dari gambar menggunakan OCR
+        # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
 
         # Parsing informasi nutrisi
@@ -179,15 +145,9 @@ if __name__ == "__main__":
             response = {"message": "Tidak ditemukan", "nutrition_info": {}, "analysis": {}}
         else:
             # Analisis menggunakan model TensorFlow
-            try:
-                analysis_result = analyze_with_model(nutrition_info, model_path)
-                if not analysis_result:
-                    analysis_result = {"error": "Analisis model gagal dilakukan."}
-            except Exception as analysis_error:
-                logging.error(f"Error during analysis: {str(analysis_error)}")
-                analysis_result = {"error": "Terjadi kesalahan saat analisis model."}
+            analysis_result = analyze_with_model(nutrition_info, model_path)
 
-            # Bangun respons akhir
+            # Respons akhir
             response = {
                 "message": "Berhasil",
                 "nutrition_info": nutrition_info,
