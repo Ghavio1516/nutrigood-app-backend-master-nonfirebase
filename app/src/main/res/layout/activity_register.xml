@@ -178,7 +178,7 @@
             android:backgroundTint="@color/yellow"
             android:text="Create Account"
             android:textAllCaps="false"
-            android:textColor="@color/green"/>
+            android:textColor="@color/black"/>
     </LinearLayout>
 
 </LinearLayout>
