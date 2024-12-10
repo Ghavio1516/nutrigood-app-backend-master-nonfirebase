@@ -141,7 +141,7 @@ if __name__ == "__main__":
     try:
         # Path gambar dan model
         image_path = sys.argv[1]
-        model_path = "./model/model_3Variabel_fix.h5"
+        model_path = "./model/analisis-nutrisi.h5"
 
         # Membaca gambar dari path
         image = cv2.imread(image_path)
