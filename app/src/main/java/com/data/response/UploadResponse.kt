@@ -7,6 +7,7 @@ data class UploadResponse(
 ) {
     data class Data(
         val message: String,
-        val nutrition_info: Map<String, String>?
+        val nutrition_info: Map<String, String>?,
+        val analysis : Map<String, String>?
     )
 }
