@@ -278,14 +278,43 @@ const loginUserHandler = async (request, h) => {
 
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const tf = require('@tensorflow/tfjs-node');
+const sharp = require('sharp');
+const mobilenet = require('@tensorflow-models/mobilenet');
 
+// Fungsi Ekstraksi Teks Sederhana
+const extractTextFromImage = async (imageBuffer) => {
+    const PaddleOCR = require('paddleocr');
+    const ocr = new PaddleOCR({ lang: 'en' });
+    const result = await ocr.recognize(imageBuffer);
+    return result.text;
+};
+
+// Fungsi Normalisasi Input Model
+const normalizeInput = (values) => {
+    const maxValues = [10, 100, 1000];  // Sesuaikan nilai maksimum
+    return values.map((val, idx) => val / maxValues[idx]);
+};
+
+// Fungsi Prediksi dengan TensorFlow.js
+const predictNutrition = async (input) => {
+    const modelPath = path.join(__dirname, '../model/model_Fix_5Variabel.json');
+    const model = await tf.loadLayersModel(`file://${modelPath}`);
+    const tensor = tf.tensor2d([input], [1, 3]);
+    const prediction = model.predict(tensor).arraySync()[0];
+
+    return {
+        KategoriGula: prediction[0] > 0.5 ? 'Tinggi Gula' : 'Rendah Gula',
+        Rekomendasi: prediction[1] > 0.5 ? 'Kurangi Konsumsi' : 'Aman Dikonsumsi',
+    };
+};
+
+// Handler untuk Upload Foto
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
 
     if (!base64Image) {
-        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -295,93 +324,64 @@ const uploadPhotoHandler = async (request, h) => {
     try {
         console.log("Starting photo upload and processing...");
 
-        // Decode Base64 and save image
+        // Decode Base64 dan Simpan Gambar
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
+        // Tentukan Direktori Simpan
         const savedFolder = path.join(__dirname, '../saved_photos');
-        if (!fs.existsSync(savedFolder)) {
-            console.log("Creating saved_photos directory...");
-            fs.mkdirSync(savedFolder, { recursive: true });
-        }
+        if (!fs.existsSync(savedFolder)) fs.mkdirSync(savedFolder, { recursive: true });
 
-        const now = new Date();
-        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
-        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
-        const finalFileName = `${userId}_${time}-${date}.jpg`;
+        // Tentukan Nama File Unik
+        const finalFileName = `${userId}_${Date.now()}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
-
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
 
-        // Execute Python script
-        const scriptPath = path.join(__dirname, '../ocr_processing.py');
-        console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
+        // Proses OCR untuk Ekstraksi Teks
+        const textResult = await extractTextFromImage(buffer);
+        console.log("OCR Result:", textResult);
 
-        const pythonProcess = spawn('python3', [scriptPath, filePath]);
+        // Parsing Teks Hasil OCR
+        const sugarMatch = textResult.match(/Sugars[:\-\s]*(\d+)\s*[gG]/i);
+        const servingMatch = textResult.match(/Sajian per kemasan[:\-\s]*(\d+)/i);
 
-        let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => {
-            scriptOutput += data.toString();
-            console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
-        });
+        if (!sugarMatch || !servingMatch) {
+            return h.response({
+                status: 'fail',
+                message: 'Nutrition information not found',
+            }).code(400);
+        }
 
-        pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
-        });
+        const sugars = parseFloat(sugarMatch[1]);
+        const serving = parseInt(servingMatch[1]);
+        const totalSugars = sugars * serving;
 
-        const result = await new Promise((resolve, reject) => {
-            pythonProcess.on('close', (code) => {
-                if (code === 0) {
-                    try {
-                        const output = JSON.parse(scriptOutput.trim());
-                        if (output.message === "Tidak ditemukan") {
-                            resolve({
-                                message: "Tidak ditemukan",
-                                nutrition_info: null,
-                            });
-                        } else if (output.nutrition_info && Object.keys(output.nutrition_info).length > 0) {
-                            resolve({
-                                message: "Berhasil",
-                                nutrition_info: output.nutrition_info,
-                            });
-                        } else {
-                            reject(new Error('OCR tidak berhasil menemukan informasi nutrisi.'));
-                        }
-                    } catch (error) {
-                        console.error("Raw script output:", scriptOutput);
-                        reject(new Error('Failed to parse script output as JSON.'));
-                    }
-                } else {
-                    reject(new Error('Python script exited with error'));
-                }
-            });
-        });
+        const modelInput = normalizeInput([serving, sugars, totalSugars]);
+        console.log("Normalized Model Input:", modelInput);
 
-        // Log the final response data
-        console.log("Final response data sent to client:", {
-            filePath,
-            message: result.message,
-            nutrition_info: result.nutrition_info,
-        });
+        // Prediksi dengan Model TensorFlow.js
+        const prediction = await predictNutrition(modelInput);
+        console.log("Model Prediction:", prediction);
 
+        // Kirim Respons
         return h.response({
             status: 'success',
-            message: 'Photo uploaded and processed successfully',
+            message: 'Photo processed successfully',
             data: {
-                message: result.message,
-                nutrition_info: result.nutrition_info,
+                message: 'Berhasil',
+                nutrition_info: { Sugars: sugars, "Sajian per kemasan": serving, "Total Sugar": totalSugars },
+                prediction,
             },
         }).code(201);
     } catch (error) {
         console.error('Error uploading and processing photo:', error.message);
         return h.response({
             status: 'fail',
-            message: 'Failed to upload and process photo',
+            message: `Failed to upload and process photo: ${error.message}`,
         }).code(500);
     }
 };
-
 
 // Ekspor semua handler
 module.exports = {
