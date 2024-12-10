@@ -106,8 +106,6 @@ if __name__ == "__main__":
     try:
         # Path gambar dari argumen
         image_path = sys.argv[1]
-        age = sys.argv[2]
-        bb = sys.argv[3]
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError("Tidak dapat membaca gambar dari path yang diberikan.")
