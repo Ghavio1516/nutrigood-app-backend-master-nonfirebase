@@ -311,12 +311,19 @@ const predictNutrition = async (input) => {
     };
 };
 
-// Handler untuk Upload Foto
+// Dynamic import function for OCR
+const loadOCR = async () => {
+    const { Ocr } = await import('@paddle-js-models/ocr');
+    return new Ocr();
+};
+
+// Updated handler function
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
 
     if (!base64Image) {
+        console.error("Error: Missing base64Image in request payload.");
         return h.response({
             status: 'fail',
             message: 'Missing base64Image',
@@ -326,56 +333,46 @@ const uploadPhotoHandler = async (request, h) => {
     try {
         console.log("Starting photo upload and processing...");
 
-        // Decode Base64 dan Simpan Gambar
+        // Decode Base64 and save image
         const base64Data = base64Image.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
-        // Tentukan Direktori Simpan
         const savedFolder = path.join(__dirname, '../saved_photos');
-        if (!fs.existsSync(savedFolder)) fs.mkdirSync(savedFolder, { recursive: true });
+        if (!fs.existsSync(savedFolder)) {
+            console.log("Creating saved_photos directory...");
+            fs.mkdirSync(savedFolder, { recursive: true });
+        }
 
-        // Tentukan Nama File Unik
-        const finalFileName = `${userId}_${Date.now()}.jpg`;
+        const now = new Date();
+        const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
+        const date = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2);
+        const finalFileName = `${userId}_${time}-${date}.jpg`;
         const filePath = path.join(savedFolder, finalFileName);
+
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
 
-        // Proses OCR untuk Ekstraksi Teks
-        const textResult = await extractTextFromImage(buffer);
-        console.log("OCR Result:", textResult);
+        // Load OCR dynamically
+        const ocr = await loadOCR();
+        console.log("OCR Model Loaded");
 
-        // Parsing Teks Hasil OCR
-        const sugarMatch = textResult.match(/Sugars[:\-\s]*(\d+)\s*[gG]/i);
-        const servingMatch = textResult.match(/Sajian per kemasan[:\-\s]*(\d+)/i);
+        // Perform OCR
+        const ocrResult = await ocr.run(filePath);
+        console.log("OCR Result:", ocrResult);
 
-        if (!sugarMatch || !servingMatch) {
+        if (!ocrResult || ocrResult.length === 0) {
             return h.response({
                 status: 'fail',
-                message: 'Nutrition information not found',
+                message: 'OCR did not return any results',
             }).code(400);
         }
 
-        const sugars = parseFloat(sugarMatch[1]);
-        const serving = parseInt(servingMatch[1]);
-        const totalSugars = sugars * serving;
-
-        const modelInput = normalizeInput([serving, sugars, totalSugars]);
-        console.log("Normalized Model Input:", modelInput);
-
-        // Prediksi dengan Model TensorFlow.js
-        const prediction = await predictNutrition(modelInput);
-        console.log("Model Prediction:", prediction);
-
-        // Kirim Respons
         return h.response({
             status: 'success',
-            message: 'Photo processed successfully',
-            data: {
-                message: 'Berhasil',
-                nutrition_info: { Sugars: sugars, "Sajian per kemasan": serving, "Total Sugar": totalSugars },
-                prediction,
-            },
+            message: 'Photo uploaded and processed successfully',
+            data: { ocrResult },
         }).code(201);
+
     } catch (error) {
         console.error('Error uploading and processing photo:', error.message);
         return h.response({
