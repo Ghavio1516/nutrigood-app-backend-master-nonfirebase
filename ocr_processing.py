@@ -115,12 +115,7 @@ def analyze_with_model(nutrition_info, model_path):
         print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
 
         # Prediksi
-        # Normalisasi jika dibutuhkan
-        input_data_normalized = input_data / np.max(input_data, axis=0)
-        print(f"Input Normalized: {input_data_normalized}")
-        predictions = model.predict(input_data_normalized)
-
-        #predictions = model.predict(input_data)
+        predictions = model.predict(input_data)
         logging.info(f"Raw predictions: {predictions}")
 
         # Pastikan predictions adalah numpy array
@@ -168,7 +163,7 @@ if __name__ == "__main__":
     try:
         # Path gambar dan model
         image_path = sys.argv[1]
-        model_path = "./model/model_3Variabel_fix.h5"
+        model_path = "./model/nutrition_model.h5"
 
         # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
