@@ -45,7 +45,7 @@ const getProductsHandler = async (request, h) => {
             [userId]
         );
 
-        //console.log('Fetched products:', rows);
+        console.log('Get products:', rows);
 
         return h.response({
             status: 'success',
@@ -115,7 +115,7 @@ const getTodayProductsHandler = async (request, h) => {
             'SELECT * FROM products WHERE userId = ? AND DATE(createdAt) = ? ORDER BY createdAt DESC',
             [userId, today]
         );
-        console.log(rows)
+        console.log('Get Todays products:', rows)
         return h.response({
             status: 'success',
             data: rows,
