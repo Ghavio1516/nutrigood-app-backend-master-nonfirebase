@@ -1,6 +1,9 @@
 package com.example.nutrigood
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -48,6 +51,8 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     private var cameraProvider: ProcessCameraProvider? = null
     private var capturedPhotoFile: File? = null
     private lateinit var addToHistoryButton: Button
+    private lateinit var takePhotoButton: Button
+    private lateinit var openGalleryButton:Button
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -58,6 +63,8 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         progressBar = view.findViewById(R.id.progress_bar)
         scanResultTextView = view.findViewById(R.id.tv_scan_result)
         addToHistoryButton = view.findViewById(R.id.btn_add_to_history)
+        takePhotoButton = view.findViewById(R.id.btn_picture_debug)
+        openGalleryButton = view.findViewById(R.id.btn_open_gallery)
 
         progressBar.visibility = View.GONE
         scanResultTextView.visibility = View.GONE
@@ -229,8 +236,7 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         apiService.uploadPhoto("Bearer $token", payload).enqueue(object : Callback<UploadResponse> {
             override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
                 // Sembunyikan ProgressBar setelah respons diterima
-                progressBar.visibility = View.GONE
-
+                hideProgressBarAnimation() // Menambahkan animasi untuk menyembunyikan progress bar
 
                 if (response.isSuccessful) {
                     val responseData = response.body()?.data
@@ -242,6 +248,8 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                         scanResultTextView.visibility = View.VISIBLE
                         scanButton.visibility = View.GONE
                         addToHistoryButton.visibility = View.VISIBLE
+                        takePhotoButton.visibility = View.GONE
+                        openGalleryButton.visibility = View.GONE
 
                         if (message == "Tidak ditemukan") {
                             scanResultTextView.text = "Hasil Scan: Tidak ditemukan"
@@ -249,22 +257,27 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                             val resultText = nutritionInfo.entries.joinToString(separator = "\n") {
                                 "${it.key}: ${it.value}"
                             }
-                            // Tambahkan analysis jika ada
                             scanResultTextView.text = if (!analysis.isNullOrEmpty()) {
                                 "Hasil Scan:\n$resultText\n\nAnalisis:\n$analysis"
                             } else {
                                 "Hasil Scan:\n$resultText"
                             }
                         } else {
-                            // Tambahkan analysis jika ada
                             scanResultTextView.text = if (!analysis.isNullOrEmpty()) {
                                 "Hasil Scan tidak ditemukan\n\nAnalisis:\n$analysis"
                             } else {
                                 "Hasil Scan tidak ditemukan"
                             }
                         }
+
+                        // Tambahkan animasi memudar untuk hasil scan
+                        showScanResultAnimation()
+
+                        // Animasi tombol "Add to History"
+                        showAddToHistoryButtonAnimation()
+
+                        Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_LONG).show()
                     }
-                    Toast.makeText(requireContext(), "Photo uploaded successfully", Toast.LENGTH_LONG).show()
                 } else {
                     val errorMessage = response.errorBody()?.string() ?: "Unknown error"
                     Log.e(TAG, "Failed to upload photo: $errorMessage")
@@ -272,14 +285,14 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
                 }
             }
 
-
             override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                progressBar.visibility = View.GONE // Sembunyikan ProgressBar jika gagal
+                hideProgressBarAnimation() // Menyembunyikan progress bar pada error
                 Log.e(TAG, "Network error: ${t.message}")
                 Toast.makeText(requireContext(), "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
+
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(
@@ -289,7 +302,6 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
     private fun saveToHistory() {
         val sharedPreferences = requireActivity().getSharedPreferences("history", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
-
         val currentResult = scanResultTextView.text.toString()
 
         if (currentResult.isNotEmpty()) {
@@ -362,4 +374,28 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
         private const val GALLERY_REQUEST_CODE = 1000
     }
+
+    private fun showScanResultAnimation() {
+        // Animasi untuk menampilkan hasil scan
+        val fadeInAnimator = ObjectAnimator.ofFloat(scanResultTextView, "alpha", 0f, 1f)
+        fadeInAnimator.duration = 2500// Durasi animasi dalam milidetik
+        fadeInAnimator.start()
+    }
+    private fun hideProgressBarAnimation() {
+        val fadeOutAnimator = ObjectAnimator.ofFloat(progressBar, "alpha", 1f, 0f)
+        fadeOutAnimator.duration = 500
+        fadeOutAnimator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                progressBar.visibility = View.GONE
+            }
+        })
+        fadeOutAnimator.start()
+    }
+    private fun showAddToHistoryButtonAnimation() {
+        val fadeInAnimator = ObjectAnimator.ofFloat(addToHistoryButton, "alpha", 0f, 1f)
+        fadeInAnimator.duration = 1000
+        fadeInAnimator.start()
+    }
+
+
 }

@@ -5,6 +5,9 @@ data class Product(
     val userId: String? = null,
     val namaProduct: String,
     val valueProduct: Double,
+    val kategori: String?,
+    val rekomendasi: String?,
     val createdAt: String? = null
 )
+
 

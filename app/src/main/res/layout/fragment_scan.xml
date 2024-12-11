@@ -14,7 +14,7 @@
             android:id="@+id/camera_and_photo_container"
             android:layout_width="match_parent"
             android:layout_height="300dp"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="8dp"> <!-- Adjusted marginBottom -->
 
             <androidx.camera.view.PreviewView
                 android:id="@+id/preview_view"
@@ -32,79 +32,79 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btn_picture_debug"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:backgroundTint="@color/yellow"
-                android:text="Take Photo"
-                android:textColor="@color/black"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btn_open_gallery"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:backgroundTint="@color/yellow"
-                android:text="Open Gallery"
-                android:textColor="@color/black"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btn_scan_button"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Scan Photo"
-                android:backgroundTint="@color/yellow"
-                android:visibility="gone"
-                android:textColor="@color/black"/>
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tv_scan_result"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Hasil Scan:"
-            android:textColor="?android:textColorPrimary"
-            android:textSize="16sp"
-            android:visibility="gone" />
+            android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:orientation="horizontal">
 
         <Button
-            android:id="@+id/btn_add_to_history"
-            android:layout_width="match_parent"
+            android:id="@+id/btn_picture_debug"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Add to History"
+            android:layout_weight="1"
             android:backgroundTint="@color/yellow"
-            android:visibility="gone"
+            android:text="Take Photo"
             android:textColor="@color/black"/>
-
-        <ProgressBar
-            android:id="@+id/progress_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:visibility="gone" />
     </LinearLayout>
-</ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+    android:gravity="center"
+    android:orientation="horizontal">
+    <Button
+        android:id="@+id/btn_open_gallery"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:backgroundTint="@color/yellow"
+        android:text="Open Gallery"
+        android:textColor="@color/black"/>
+</LinearLayout>
+
+<LinearLayout
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_marginBottom="8dp"
+    android:gravity="center"
+    android:orientation="horizontal">
+
+<Button
+android:id="@+id/btn_scan_button"
+android:layout_width="0dp"
+android:layout_height="wrap_content"
+android:layout_weight="1"
+android:text="Scan Photo"
+android:backgroundTint="@color/yellow"
+android:visibility="gone"
+android:textColor="@color/black"/>
+    </LinearLayout>
+
+<TextView
+android:id="@+id/tv_scan_result"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_marginTop="8dp"
+    android:text="Hasil Scan:"
+    android:textColor="?android:textColorPrimary"
+    android:textSize="16sp"
+    android:visibility="gone" />
+
+<Button
+android:id="@+id/btn_add_to_history"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_marginTop="8dp"
+    android:text="Add to History"
+    android:backgroundTint="@color/yellow"
+    android:visibility="gone"
+    android:textColor="@color/black"/>
+
+<ProgressBar
+android:id="@+id/progress_bar"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_marginTop="16dp"
+android:visibility="gone" />
+    </LinearLayout>
+    </ScrollView>

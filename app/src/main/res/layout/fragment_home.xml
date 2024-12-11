@@ -1,16 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:colorBackground"
-    android:clipToPadding="false"
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Logo of the project -->
-
-    <!-- RecyclerView with enhanced styling -->
-
+    <!-- Logo -->
     <ImageView
         android:id="@+id/logo_project"
         android:layout_width="138dp"
@@ -23,24 +18,54 @@
         android:maxHeight="100dp"
         android:src="@drawable/logonutrii" />
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Horizontal LinearLayout for the Product List and Today's Product text -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:fontFamily="sans-serif-medium"
-        android:text="Product List"
-        android:textColor="#257180"
-        android:textSize="18sp" />
+        android:orientation="horizontal"
+        android:gravity="start">
+
+        <!-- Product List Text -->
+        <TextView
+            android:id="@+id/product_List"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Product List"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="#257180"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="16dp" /> <!-- Added marginEnd to create spacing -->
+
+        <!-- Today's Product Text -->
+        <TextView
+            android:id="@+id/todays_product"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Today's Product"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="#257180"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp" /> <!-- Margin below Today's Product -->
+
+    </LinearLayout>
+
+    <!-- RecyclerView for Product List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view_product_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        android:background="?android:colorBackground"
+        android:layout_marginTop="8dp" />
+
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view"
+        android:id="@+id/recycler_view_todays_product"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="8dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
         android:background="?android:colorBackground"
-        android:clipToPadding="false"
-        android:padding="8dp"
-        android:scrollbars="vertical"
-        android:textColor="?android:textColorPrimary"/>
+        android:layout_marginTop="8dp" />
 
 </LinearLayout>

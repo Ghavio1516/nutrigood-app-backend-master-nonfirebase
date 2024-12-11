@@ -42,6 +42,19 @@ interface ApiService {
         @Path("id") id: Int
     ): Call<Product>
 
+    @POST("products/today")
+    fun addProductToday(
+        @Header("Authorization") token: String, // Menyisipkan token JWT di header
+        @Body product: Product
+    ): Call<Product>
+
+
+    @GET("products/today")
+    fun getProductToday(
+        @Header("Authorization") token: String
+    ): Call<ProductResponse>
+
+
     @GET("products")
     fun getProducts(
         @Header("Authorization") token: String

@@ -3,34 +3,69 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:gravity="center_vertical|start"> <!-- Center vertically, align start (top) -->
 
+    <!-- Logo at the top -->
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="wrap_content"
+        android:layout_height="250dp"
+        android:src="@drawable/logonutrii"
+        android:layout_marginBottom="24dp" /> <!-- Added bottom margin for spacing -->
+
+    <!-- EditText for product name -->
     <EditText
         android:id="@+id/et_product_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nama Produk" />
+        android:hint="Nama Produk"
+        android:layout_marginBottom="16dp" /> <!-- Added bottom margin for spacing -->
 
+    <!-- EditText for kandungan -->
     <EditText
         android:id="@+id/et_kandungan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Kandungan "
-        android:inputType="numberDecimal" />
+        android:hint="Kandungan"
+        android:inputType="numberDecimal"
+        android:layout_marginBottom="16dp" /> <!-- Added bottom margin for spacing -->
 
+    <!-- EditText for banyak produk -->
     <EditText
         android:id="@+id/et_banyak_produk"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Banyak Produk"
-        android:inputType="number" />
+        android:inputType="number"
+        android:layout_marginBottom="16dp" /> <!-- Added bottom margin for spacing -->
 
+    <!-- EditText for kategori -->
+    <EditText
+        android:id="@+id/et_kategori"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Kategori"
+        android:focusable="false"
+        android:clickable="false"
+        android:layout_marginBottom="16dp" /> <!-- Added bottom margin for spacing -->
 
+    <!-- EditText for rekomendasi -->
+    <EditText
+        android:id="@+id/et_rekomendasi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Rekomendasi"
+        android:focusable="false"
+        android:clickable="false"
+        android:layout_marginBottom="24dp" /> <!-- Added bottom margin for spacing -->
+
+    <!-- Button to save product -->
     <Button
         android:id="@+id/btn_save_product"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Simpan"
         android:textSize="16sp"
-        android:textColor="@color/white"/>
+        android:textColor="@color/white" />
 </LinearLayout>
