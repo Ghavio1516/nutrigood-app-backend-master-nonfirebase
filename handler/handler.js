@@ -45,7 +45,7 @@ const getProductsHandler = async (request, h) => {
             [userId]
         );
 
-        console.log('Get products:', rows);
+        //console.log('Get products:', rows);
 
         return h.response({
             status: 'success',
@@ -109,14 +109,14 @@ const deleteProductByIdHandler = async (request, h) => {
 const getTodayProductsHandler = async (request, h) => {
     const { userId } = request.auth;
     const today = new Date().toISOString().slice(0, 10);
-    console.log(today);
+    //console.log(today);
 
     try {
         const [rows] = await data.query(
             'SELECT * FROM products WHERE userId = ? AND DATE(createdAt) = ? ORDER BY createdAt DESC',
             [userId, today]
         );
-        console.log('Get Todays products:', rows);
+        //console.log('Get Todays products:', rows);
 
         // Wrap the data in the same format as `getProductsHandler`
         return h.response({
@@ -209,7 +209,7 @@ const getUserDetailsHandler = async (request, h) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.userId;
 
-        console.log("Decoded UserID:", userId);
+        //console.log("Decoded UserID:", userId);
 
         const [rows] = await data.query('SELECT name AS username, email FROM users WHERE id = ?', [userId]);
         console.log("Database Query Result:", rows);
