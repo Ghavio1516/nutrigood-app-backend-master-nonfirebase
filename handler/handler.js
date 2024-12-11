@@ -327,7 +327,7 @@ const uploadPhotoHandler = async (request, h) => {
         console.log(`Photo saved at: ${filePath}`);
         console.log(`User ID: ${userId}`)
         // Fetch user data from the database
-        const user = await getUserDataFromDatabase(userId); // Fetch age, bb, diabetes from DB
+        const user = await getUserDataFromDatabase(userId);
         if (!user) {
             console.error("User not found in database.");
             return h.response({
@@ -337,11 +337,13 @@ const uploadPhotoHandler = async (request, h) => {
         }
 
         // Ensure valid values are passed to Python
-        const age = user.age || 0;  // Default to 0 if undefined
-        const bb = user.bb || 0;    // Default to 0 if undefined
-        const diabetes = user.diabetes === "Yes" ? 1 : 0; // Convert "Yes" to 1, "No" to 0
+        const userData = user[0];  // Extract the first record
+        const age = userData.age || 0;  // Default to 0 if undefined
+        const bb = userData.bb || 0;    // Default to 0 if undefined
+        const diabetes = userData.diabetes === "Yes" ? 1 : 0; // Convert "Yes" to 1, "No" to 0
 
-        console.log(`User Data: ${JSON.stringify(user)}, Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
+        // Log the user data properly
+        console.log(`User Data: ${JSON.stringify(userData)}, Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
 
         // Execute Python script with the fetched user data and image path
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
