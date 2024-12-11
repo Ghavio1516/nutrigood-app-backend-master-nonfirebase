@@ -282,7 +282,7 @@ const { spawn } = require('child_process');
 
 // Function to fetch user data from the database
 async function getUserDataFromDatabase(userId) {
-    const userData = await database.query(
+    const userData = await data.query(
         `SELECT age, bb, diabetes FROM users WHERE id = ?`,
         [userId]
     );
