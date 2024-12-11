@@ -343,7 +343,7 @@ const uploadPhotoHandler = async (request, h) => {
         const diabetes = userData.diabetes === "Yes" ? 1 : 0; // Convert "Yes" to 1, "No" to 0
 
         // Log the user data properly
-        console.log(`User Data: ${JSON.stringify(userData)}, Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
+        console.log(`User Data: Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
 
         // Execute Python script with the fetched user data and image path
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
