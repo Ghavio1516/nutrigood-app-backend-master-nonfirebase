@@ -280,6 +280,18 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
+// Function to fetch user data from the database
+async function getUserDataFromDatabase(userId) {
+    const userData = await database.query(
+        `SELECT age, bb, diabetes FROM users WHERE id = ?`,
+        [userId]
+    );
+    if (!userData || userData.length === 0) {
+        throw new Error('User not found');
+    }
+    return userData[0]; // Return the first record
+}
+
 const uploadPhotoHandler = async (request, h) => {
     const { userId } = request.auth;
     const { base64Image } = request.payload;
