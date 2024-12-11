@@ -46,11 +46,14 @@ def extract_text_from_image(image_path):
 
 # Parsing teks hasil OCR
 def parse_nutrition_info(extracted_text):
+    print(f"Extracted text: {extracted_text}")  # Debugging line
+    if not extracted_text:
+        raise ValueError("Extracted text is empty or None")
+
     nutrition_data = {}
     sugar_pattern = '|'.join(re.escape(variation) for variation in sugar_variations)
     serving_pattern = '|'.join(re.escape(variation) for variation in serving_variations)
 
-    # Pola regex terbaru
     patterns = {
         'Sajian per kemasan': rf'([0-9]+)\s*(?:[:\-]|\s*)?\s*({serving_pattern})|({serving_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+)',
         'Sugars': rf'({sugar_pattern})\s*(?:[:\-]|\s*)?\s*([0-9]+(?:\.[0-9]+)?\s*[gG]|mg)'
@@ -58,6 +61,7 @@ def parse_nutrition_info(extracted_text):
 
     for key, pattern in patterns.items():
         match = re.search(pattern, extracted_text, re.IGNORECASE)
+        print(f"Parsing pattern: {key}")  # Debugging line
         if match:
             if key == "Sajian per kemasan":
                 found_value = match.group(1) or match.group(4)
@@ -66,31 +70,29 @@ def parse_nutrition_info(extracted_text):
 
             if found_value:
                 nutrition_data[key] = found_value.strip()
-                logging.info(f"{key} ditemukan: {nutrition_data[key]}")
+                print(f"Found {key}: {nutrition_data[key]}")  # Debugging line
             else:
-                logging.warning(f"Tidak ditemukan nilai untuk {key} meskipun pola cocok.")
+                print(f"Pattern matched, but value is missing for {key}")  # Debugging line
         else:
-            logging.warning(f"Tidak ditemukan data untuk {key}. Pola yang digunakan: {pattern}")
+            print(f"No match found for {key}. Using pattern: {pattern}")  # Debugging line
 
-    # Tetapkan nilai default jika "Sajian per kemasan" tidak ditemukan
     if "Sajian per kemasan" not in nutrition_data:
-        logging.error("Sajian per kemasan tidak terdeteksi! Menggunakan default 1.")
+        print("Sajian per kemasan not found, using default value 1")  # Debugging line
         serving_count = 1
     else:
         serving_count = int(nutrition_data["Sajian per kemasan"])
-        logging.info(f"Sajian per kemasan ditemukan: {serving_count}")
+        print(f"Sajian per kemasan found: {serving_count}")  # Debugging line
 
     nutrition_data["Sajian per kemasan"] = serving_count
 
-    # Hitung Total Sugar jika tersedia
     sugar_value = nutrition_data.get("Sugars")
     if sugar_value:
         try:
             sugar_amount = float(re.search(r"[\d.]+", sugar_value).group())
             nutrition_data["Total Sugar"] = f"{sugar_amount * serving_count:.2f} g"
-            logging.info(f"Total Sugar dihitung: {nutrition_data['Total Sugar']}")
+            print(f"Total Sugar calculated: {nutrition_data['Total Sugar']}")  # Debugging line
         except AttributeError:
-            logging.error("Tidak dapat menghitung Total Sugar karena nilai gula tidak valid.")
+            print("Unable to calculate Total Sugar, invalid value")  # Debugging line
 
     return nutrition_data
 
@@ -106,12 +108,8 @@ def analyze_with_model(nutrition_info, model_path):
 
         # Input data
         input_data = np.array([[serving_per_package, sugar, total_sugar]])
-        logging.info(f"Input data: {input_data}")
 
         # Debugging input data
-        print("Detail Input Data ke Model:")
-        print(f"Shape: {input_data.shape}")
-        print(input_data)
         print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
 
         # Prediksi
@@ -171,6 +169,11 @@ if __name__ == "__main__":
 
         # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
+        print(f"Extracted text from image: {extracted_text}")  # Debugging line
+        if not extracted_text:
+            print("No text extracted from image, aborting")  # Debugging line
+            sys.exit(1)
+
 
         # Parsing informasi nutrisi
         nutrition_info = parse_nutrition_info(extracted_text)
