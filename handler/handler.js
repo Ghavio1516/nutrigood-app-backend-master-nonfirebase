@@ -109,13 +109,13 @@ const deleteProductByIdHandler = async (request, h) => {
 const getTodayProductsHandler = async (request, h) => {
     const { userId } = request.auth;
     const today = new Date().toISOString().slice(0, 10);
-
+    console.log(today)
     try {
         const [rows] = await data.query(
             'SELECT * FROM products WHERE userId = ? AND DATE(createdAt) = ? ORDER BY createdAt DESC',
             [userId, today]
         );
-
+        console.log(rows)
         return h.response({
             status: 'success',
             data: rows,
