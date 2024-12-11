@@ -163,6 +163,10 @@ if __name__ == "__main__":
     try:
         # Path gambar dan model
         image_path = sys.argv[1]
+        age = int(sys.argv[2])  # Age
+        bb = float(sys.argv[3])  # Weight (bb)
+        diabetes = int(sys.argv[4])  # Diabetes (1 for Yes, 0 for No)
+        print(age,bb,diabetes)
         model_path = "./model/nutrition_model.h5"
 
         # Ekstraksi teks dari gambar

@@ -314,11 +314,24 @@ const uploadPhotoHandler = async (request, h) => {
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
 
+        // Fetch user data from the database
+        const user = await getUserDataFromDatabase(userId); // Fetch age, bb, diabetes from DB
+        if (!user) {
+            console.error("User not found in database.");
+            return h.response({
+                status: 'fail',
+                message: 'User not found.',
+            }).code(400);
+        }
+
+        // Convert diabetes column ("Yes"/"No") to 1/0
+        const diabetes = user.diabetes === "Yes" ? 1 : 0;
+
         // Execute Python script
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
 
-        const pythonProcess = spawn('python3', [scriptPath, filePath]);
+        const pythonProcess = spawn('python3', [scriptPath, filePath, user.age, user.bb, diabetes]);
 
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
