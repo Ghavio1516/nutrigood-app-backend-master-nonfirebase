@@ -325,7 +325,7 @@ const uploadPhotoHandler = async (request, h) => {
 
         fs.writeFileSync(filePath, buffer);
         console.log(`Photo saved at: ${filePath}`);
-
+        console.log(`User ID: ${userId}`)
         // Fetch user data from the database
         const user = await getUserDataFromDatabase(userId); // Fetch age, bb, diabetes from DB
         if (!user) {
@@ -341,7 +341,7 @@ const uploadPhotoHandler = async (request, h) => {
         const bb = user.bb || 0;    // Default to 0 if undefined
         const diabetes = user.diabetes === "Yes" ? 1 : 0; // Convert "Yes" to 1, "No" to 0
 
-        console.log(`User Data: Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
+        console.error(`User Data: Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
 
         // Execute Python script with the fetched user data and image path
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
@@ -355,9 +355,9 @@ const uploadPhotoHandler = async (request, h) => {
             console.log(`Python stdout: ${data.toString()}`);
         });
 
-        pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data.toString()}`);
-        });
+        // pythonProcess.stderr.on('data', (data) => {
+        //     console.error(`Python stderr: ${data.toString()}`);
+        // });
 
         const result = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {

@@ -166,7 +166,7 @@ if __name__ == "__main__":
         age = int(sys.argv[2])  # Age
         bb = float(sys.argv[3])  # Weight (bb)
         diabetes = int(sys.argv[4])  # Diabetes (1 for Yes, 0 for No)
-        print(age,bb,diabetes)
+        print(f"data : {age,bb,diabetes}")
         model_path = "./model/nutrition_model.h5"
 
         # Ekstraksi teks dari gambar
