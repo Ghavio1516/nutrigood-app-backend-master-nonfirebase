@@ -51,7 +51,7 @@ interface ApiService {
     @GET("products/today")
     fun getProductToday(
         @Header("Authorization") token: String
-    ): Call<Product>
+    ): Call<ProductResponse>  // Now expects ProductResponse
 
     @GET("products")
     fun getProducts(

@@ -15,15 +15,8 @@ class ProductAdapter(
 
     fun setProducts(products: List<Product>) {
         productList.clear()
-        productList.addAll(products)
-        notifyDataSetChanged()
-    }
-
-    // Method to handle a single product for "Today's Product"
-    fun setProduct(product: Product) {
-        productList.clear()
-        productList.add(product)
-        notifyDataSetChanged()
+        productList.addAll(products)  // Add all products to the list
+        notifyDataSetChanged()  // Notify the adapter to update the RecyclerView
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {

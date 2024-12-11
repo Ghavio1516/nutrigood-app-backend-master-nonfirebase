@@ -128,6 +128,7 @@ class HomeFragment : Fragment() {
     }
 
     // Function to fetch today's product
+    // Function to fetch today's product
     private fun fetchTodaysProduct() {
         val sharedPreferences = requireActivity().getSharedPreferences("auth", Context.MODE_PRIVATE)
         val token = sharedPreferences.getString("token", "") ?: ""
@@ -136,13 +137,16 @@ class HomeFragment : Fragment() {
             val apiService = ApiConfig.getApiService()
 
             // Make the API call to fetch today's product
-            apiService.getProductToday("Bearer $token").enqueue(object : Callback<Product> {
-                override fun onResponse(call: Call<Product>, response: Response<Product>) {
+            apiService.getProductToday("Bearer $token").enqueue(object : Callback<ProductResponse> {  // Use ProductResponse to match the API structure
+                override fun onResponse(call: Call<ProductResponse>, response: Response<ProductResponse>) {
                     if (response.isSuccessful) {
-                        val todaysProduct = response.body()
+                        val productResponse = response.body()
+                        val products = productResponse?.data?.products // Access products inside the data object
 
-                        if (todaysProduct != null) {
-                            todayProductAdapter.setProduct(todaysProduct)
+                        // Check if the products list is not null and has at least one product
+                        if (products != null && products.isNotEmpty()) {
+                            // Pass the entire list of products to the adapter
+                            todayProductAdapter.setProducts(products)
                         } else {
                             Toast.makeText(requireContext(), "No today's product available", Toast.LENGTH_SHORT).show()
                         }
@@ -152,7 +156,7 @@ class HomeFragment : Fragment() {
                     }
                 }
 
-                override fun onFailure(call: Call<Product>, t: Throwable) {
+                override fun onFailure(call: Call<ProductResponse>, t: Throwable) {
                     Log.e("HomeFragment", "Network error: ${t.message}")
                     Toast.makeText(requireContext(), "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
                 }
@@ -161,7 +165,6 @@ class HomeFragment : Fragment() {
             Toast.makeText(requireContext(), "No token found, please log in", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     // Function to handle product deletion
     private fun deleteProduct(product: Product) {

@@ -7,6 +7,3 @@ data class ProductResponse(
 data class ProductData(
     val products: List<Product>
 )
-
-
-
