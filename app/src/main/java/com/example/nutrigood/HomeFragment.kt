@@ -136,16 +136,12 @@ class HomeFragment : Fragment() {
             val apiService = ApiConfig.getApiService()
 
             // Make the API call to fetch today's product
-            apiService.getProductToday("Bearer $token").enqueue(object : Callback<List<Product>> {
-                override fun onResponse(call: Call<List<Product>>, response: Response<List<Product>>) {
+            apiService.getProductToday("Bearer $token").enqueue(object : Callback<Product> {
+                override fun onResponse(call: Call<Product>, response: Response<Product>) {
                     if (response.isSuccessful) {
-                        val products = response.body()
+                        val todaysProduct = response.body()
 
-                        // Check if the response body is not null and has products
-                        if (products != null && products.isNotEmpty()) {
-                            val todaysProduct = products.first() // Get the first product as today's product
-
-                            // Update the adapter with the single product for "Today's Product"
+                        if (todaysProduct != null) {
                             todayProductAdapter.setProduct(todaysProduct)
                         } else {
                             Toast.makeText(requireContext(), "No today's product available", Toast.LENGTH_SHORT).show()
@@ -156,7 +152,7 @@ class HomeFragment : Fragment() {
                     }
                 }
 
-                override fun onFailure(call: Call<List<Product>>, t: Throwable) {
+                override fun onFailure(call: Call<Product>, t: Throwable) {
                     Log.e("HomeFragment", "Network error: ${t.message}")
                     Toast.makeText(requireContext(), "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
                 }

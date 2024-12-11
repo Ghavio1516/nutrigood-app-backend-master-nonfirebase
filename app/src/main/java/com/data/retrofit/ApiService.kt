@@ -48,12 +48,10 @@ interface ApiService {
         @Body product: Product
     ): Call<Product>
 
-
     @GET("products/today")
     fun getProductToday(
         @Header("Authorization") token: String
-    ): Call<ProductResponse>
-
+    ): Call<Product>
 
     @GET("products")
     fun getProducts(

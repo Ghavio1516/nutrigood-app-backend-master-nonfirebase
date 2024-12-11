@@ -9,5 +9,3 @@ data class Product(
     val rekomendasi: String?,
     val createdAt: String? = null
 )
-
-
