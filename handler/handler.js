@@ -341,19 +341,19 @@ const uploadPhotoHandler = async (request, h) => {
         const bb = user.bb || 0;    // Default to 0 if undefined
         const diabetes = user.diabetes === "Yes" ? 1 : 0; // Convert "Yes" to 1, "No" to 0
 
-        console.error(`User Data: Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
+        console.log(`User Data: User = ${user} Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
 
         // Execute Python script with the fetched user data and image path
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
-        console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
+        //console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
         
         const pythonProcess = spawn('python3', [scriptPath, filePath, age, bb, diabetes]);
 
         let scriptOutput = '';
-        pythonProcess.stdout.on('data', (data) => {
-            scriptOutput += data.toString();
-            console.log(`Python stdout: ${data.toString()}`);
-        });
+        // pythonProcess.stdout.on('data', (data) => {
+        //     scriptOutput += data.toString();
+        //     console.log(`Python stdout: ${data.toString()}`);
+        // });
 
         // pythonProcess.stderr.on('data', (data) => {
         //     console.error(`Python stderr: ${data.toString()}`);
