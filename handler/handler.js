@@ -38,14 +38,14 @@ const addProductHandler = async (request, h) => {
 // Handler untuk mendapatkan semua produk
 const getProductsHandler = async (request, h) => {
     const { userId } = request.auth;
-    console.log('Fetching products for userId:', userId); // Log userId untuk debugging
+    //console.log('Fetching products for userId:', userId); // Log userId untuk debugging
     try {
         const [rows] = await data.query(
             'SELECT * FROM products WHERE userId = ? ORDER BY createdAt DESC',
             [userId]
         );
 
-        console.log('Fetched products:', rows);
+        //console.log('Fetched products:', rows);
 
         return h.response({
             status: 'success',
