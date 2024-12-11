@@ -336,40 +336,42 @@ const uploadPhotoHandler = async (request, h) => {
             }).code(400);
         }
 
-        // Convert diabetes column ("Yes"/"No") to 1/0
-        const diabetes = user.diabetes === "Yes" ? 1 : 0;
+        // Ensure valid values are passed to Python
+        const age = user.age || 0;  // Default to 0 if undefined
+        const bb = user.bb || 0;    // Default to 0 if undefined
+        const diabetes = user.diabetes === "Yes" ? 1 : 0; // Convert "Yes" to 1, "No" to 0
 
-        // Execute Python script
+        console.log(`User Data: Age = ${age}, Weight = ${bb}, Diabetes = ${diabetes}`);
+
+        // Execute Python script with the fetched user data and image path
         const scriptPath = path.join(__dirname, '../ocr_processing.py');
         console.log(`Executing Python script: ${scriptPath} with file path: ${filePath}`);
-
-        const pythonProcess = spawn('python3', [scriptPath, filePath, user.age, user.bb, diabetes]);
+        
+        const pythonProcess = spawn('python3', [scriptPath, filePath, age, bb, diabetes]);
 
         let scriptOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             scriptOutput += data.toString();
-            console.log(`Python stdout: ${data.toString()}`); // Log output as it arrives
+            console.log(`Python stdout: ${data.toString()}`);
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            console.error(`Python stderr: ${data.toString()}`); // Log errors from Python
+            console.error(`Python stderr: ${data.toString()}`);
         });
 
         const result = await new Promise((resolve, reject) => {
             pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        // Log raw Python script output
                         console.log("Raw Python script output:", scriptOutput);
-        
-                        // Cari prefix "Output :" dan ambil JSON setelahnya
+
                         const prefix = "Output :";
                         const outputIndex = scriptOutput.indexOf(prefix);
                         if (outputIndex === -1) throw new Error("No valid output found in script output");
-        
+
                         const jsonString = scriptOutput.slice(outputIndex + prefix.length).trim();
                         const output = JSON.parse(jsonString);
-        
+
                         resolve(output);
                     } catch (error) {
                         console.error("Error parsing JSON from Python script:", error.message);
@@ -379,14 +381,6 @@ const uploadPhotoHandler = async (request, h) => {
                     reject(new Error("Python script exited with error"));
                 }
             });
-        });
-        
-        // Log the final response data
-        console.log("Final response data sent to client:", {
-            filePath,
-            message: result.message,
-            nutrition_info: result.nutrition_info,
-            analysis: result.analysis,
         });
 
         return h.response({
