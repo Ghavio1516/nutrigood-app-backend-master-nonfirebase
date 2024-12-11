@@ -12,16 +12,16 @@ function generateUniqueId(email) {
 // Handler untuk menambahkan produk
 const addProductHandler = async (request, h) => {
     const { userId } = request.auth; // Mendapatkan userId dari token JWT
-    const { namaProduct, valueProduct } = request.payload;
+    const { namaProduct, valueProduct, kategori, rekomendasi } = request.payload;
 
     const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    console.log('Add Product Params:', { userId, namaProduct, valueProduct, createdAt });
+    console.log('Add Product Params:', { userId, namaProduct, valueProduct, kategori, rekomendasi, createdAt });
 
     try {
         const [result] = await data.query(
-            'INSERT INTO products (userId, namaProduct, valueProduct, createdAt) VALUES (?, ?, ?, ?)',
-            [userId, namaProduct, valueProduct, createdAt]
+            'INSERT INTO products (userId, namaProduct, valueProduct, kategori, rekomendasi, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+            [userId, namaProduct, valueProduct, kategori, rekomendasi, createdAt]
         );
 
         return h.response({
