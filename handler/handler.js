@@ -109,16 +109,21 @@ const deleteProductByIdHandler = async (request, h) => {
 const getTodayProductsHandler = async (request, h) => {
     const { userId } = request.auth;
     const today = new Date().toISOString().slice(0, 10);
-    console.log(today)
+    console.log(today);
+
     try {
         const [rows] = await data.query(
             'SELECT * FROM products WHERE userId = ? AND DATE(createdAt) = ? ORDER BY createdAt DESC',
             [userId, today]
         );
-        console.log('Get Todays products:', rows)
+        console.log('Get Todays products:', rows);
+
+        // Wrap the data in the same format as `getProductsHandler`
         return h.response({
             status: 'success',
-            data: rows,
+            data: {
+                products: rows,  // Wrap the data in a "products" field
+            },
         }).code(200);
     } catch (error) {
         console.error(error);
@@ -126,7 +131,6 @@ const getTodayProductsHandler = async (request, h) => {
     }
 };
 
-// Handler untuk registrasi user
 // Handler untuk registrasi user
 const registerUserHandler = async (request, h) => {
     const { email, password, name, age, diabetes, bb } = request.payload;
