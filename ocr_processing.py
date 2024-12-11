@@ -94,7 +94,7 @@ def parse_nutrition_info(extracted_text):
 
     return nutrition_data
 
-def analyze_with_model(nutrition_info, model_path):
+def analyze_with_model(nutrition_info, model_path, age, bb, diabetes):
     try:
         model = tf.keras.models.load_model(model_path)
         logging.info("Model berhasil dimuat.")
@@ -105,13 +105,11 @@ def analyze_with_model(nutrition_info, model_path):
         total_sugar = float(re.search(r"[\d.]+", nutrition_info.get("Total Sugar", "0")).group())
 
         # Input data
-        input_data = np.array([[serving_per_package, sugar, total_sugar]])
+        input_data = np.array([[serving_per_package, sugar, total_sugar, age, bb, diabetes]])
         logging.info(f"Input data: {input_data}")
 
         # Debugging input data
         print("Detail Input Data ke Model:")
-        print(f"Shape: {input_data.shape}")
-        print(input_data)
         print(f"Input ke Model (Shape: {input_data.shape}): {input_data}")
 
         # Prediksi
@@ -167,7 +165,7 @@ if __name__ == "__main__":
         bb = float(sys.argv[3])  # Weight (bb)
         diabetes = int(sys.argv[4])  # Diabetes (1 for Yes, 0 for No)
         print(f"data : {age,bb,diabetes}")
-        model_path = "./model/nutrition_model.h5"
+        model_path = "./model/nutrition_model_5var.h5"
 
         # Ekstraksi teks dari gambar
         extracted_text = extract_text_from_image(image_path)
@@ -180,7 +178,7 @@ if __name__ == "__main__":
             response = {"message": "Tidak ditemukan", "nutrition_info": {}, "analysis": {}}
         else:
             # Analisis menggunakan model TensorFlow
-            analysis_result = analyze_with_model(nutrition_info, model_path)
+            analysis_result = analyze_with_model(nutrition_info, model_path, age, bb, diabetes)
 
             # Respons akhir
             response = {
